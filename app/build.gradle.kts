@@ -20,8 +20,8 @@ android {
         applicationId = "com.ambr.reloaded"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "3.0.2"
+        versionCode = 7
+        versionName = "3.0.3"
     }
 
     val storePath = secret("storeFile", "AMBR_KEYSTORE_FILE")
@@ -54,6 +54,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures { compose = true }
+
+    // No Google-only encrypted dependency metadata in the APK (IzzyOnDroid / F-Droid require this).
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
 
     // Lists every translated language (values-xx folders) in Android 13+'s per-app language setting.
     androidResources { generateLocaleConfig = true }

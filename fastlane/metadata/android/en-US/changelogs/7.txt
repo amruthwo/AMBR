@@ -1,0 +1,4 @@
+• AMBR is now translatable: help translate it on Weblate (hosted.weblate.org/engage/ambr)
+• Proper plurals for counts in every language
+• Android 13+: pick AMBR's language per app as translations arrive
+• Build: no Google dependency-metadata block in the APK (for IzzyOnDroid/F-Droid)

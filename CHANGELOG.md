@@ -2,6 +2,11 @@
 
 All notable changes to AMBR. Versions follow `versionName` (versionCode in brackets).
 
+## 3.0.3 (7)
+- AMBR is translatable: all text moved to `strings.xml`, translations on [Weblate](https://hosted.weblate.org/engage/ambr/)
+- Proper plural forms; Android 13+ per-app language list generated from available translations
+- APK no longer contains Google's encrypted dependency-metadata block (IzzyOnDroid / F-Droid requirement)
+
 ## 3.0.2 (6) – first public release
 
 ### Watching
