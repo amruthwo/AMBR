@@ -1,0 +1,518 @@
+package com.ambr.reloaded.ui
+
+import android.app.Application
+import android.os.SystemClock
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.ambr.reloaded.data.Ambience
+import com.ambr.reloaded.data.Cram
+import com.ambr.reloaded.data.DuplicateFinder
+import com.ambr.reloaded.data.DurationCache
+import com.ambr.reloaded.data.FolderKind
+import com.ambr.reloaded.data.PinLock
+import com.ambr.reloaded.data.Prefs
+import com.ambr.reloaded.data.Video
+import com.ambr.reloaded.data.VideoFolder
+import com.ambr.reloaded.data.VideoRepository
+import com.ambr.reloaded.data.ViewMode
+import com.ambr.reloaded.share.YtDlp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import com.ambr.reloaded.util.pluralVideos
+import kotlin.random.Random
+
+/** An open folder: its shuffled playlist and where to start. [generation] bumps on reshuffle. */
+data class FeedState(
+    val folder: VideoFolder,
+    val playlist: List<Video>,
+    val startIndex: Int,
+    val generation: Int = 0,
+)
+
+/** A long-running file job shown as a blocking progress dialog. */
+data class Busy(val label: String, val progress: Float? = null)
+
+data class DuplicateState(
+    val running: Boolean = false,
+    val progress: Float = 0f,
+    val groups: List<List<Video>>? = null,
+)
+
+data class StatsState(
+    val durations: Map<String, Long> = emptyMap(),
+    val progress: Float = 0f,
+    val done: Boolean = false,
+)
+
+class AmbrViewModel(app: Application) : AndroidViewModel(app) {
+    private val prefs = Prefs(app)
+    private val repo = VideoRepository(app, prefs)
+    private val pin = PinLock(prefs)
+    private val durationCache = DurationCache(app)
+
+    // ------------------------------------------------------------------ state
+
+    private val _folders = MutableStateFlow<List<VideoFolder>>(emptyList())
+    private val _favorites = MutableStateFlow(prefs.favorites)
+    val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
+
+    /** Real folders plus the virtual Favorites folder at the front (when it has anything). */
+    val folders: StateFlow<List<VideoFolder>> = combine(_folders, _favorites) { list, favs ->
+        val favVideos = list.flatMap { it.videos }.filter { it.path in favs }
+        val favFolder = if (favVideos.isNotEmpty()) {
+            listOf(VideoFolder(VideoFolder.FAVORITES_PATH, "Favorites", favVideos, FolderKind.Favorites))
+        } else emptyList()
+        favFolder + list
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Every video in every visible folder, for Shuffle All. */
+    val allFolder: StateFlow<VideoFolder?> = _folders.map { list ->
+        val all = list.flatMap { it.videos }
+        if (all.isEmpty()) null else VideoFolder(VideoFolder.ALL_PATH, "Shuffle All", all, FolderKind.All)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val _hideFromGalleries = MutableStateFlow(prefs.hideFromGalleries)
+    val hideFromGalleries: StateFlow<Boolean> = _hideFromGalleries.asStateFlow()
+
+    private val _cramHeight = MutableStateFlow(prefs.cramHeight)
+    val cramHeight: StateFlow<Int> = _cramHeight.asStateFlow()
+    private val _cramCharging = MutableStateFlow(prefs.cramChargingOnly)
+    val cramCharging: StateFlow<Boolean> = _cramCharging.asStateFlow()
+
+    private val _scanning = MutableStateFlow(false)
+    val scanning: StateFlow<Boolean> = _scanning.asStateFlow()
+    private val _loaded = MutableStateFlow(false)
+    val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+
+    private val _feed = MutableStateFlow<FeedState?>(null)
+    val feed: StateFlow<FeedState?> = _feed.asStateFlow()
+
+    private val _muted = MutableStateFlow(prefs.muted)
+    val muted: StateFlow<Boolean> = _muted.asStateFlow()
+
+    private val _viewMode = MutableStateFlow(prefs.viewMode)
+    val viewMode: StateFlow<ViewMode> = _viewMode.asStateFlow()
+
+    private val _unlocked = MutableStateFlow(false)
+    val unlocked: StateFlow<Boolean> = _unlocked.asStateFlow()
+    val pinIsSet: Boolean get() = pin.isSet
+
+    private val _biometric = MutableStateFlow(prefs.biometric)
+    val biometric: StateFlow<Boolean> = _biometric.asStateFlow()
+    fun setBiometric(on: Boolean) { _biometric.value = on; prefs.biometric = on }
+
+    private val _busy = MutableStateFlow<Busy?>(null)
+    val busy: StateFlow<Busy?> = _busy.asStateFlow()
+
+    private val _ambience = MutableStateFlow<List<Int>>(emptyList())
+    val ambience: StateFlow<List<Int>> = _ambience.asStateFlow()
+
+    private val _stats = MutableStateFlow(StatsState())
+    val stats: StateFlow<StatsState> = _stats.asStateFlow()
+
+    private val _dups = MutableStateFlow(DuplicateState())
+    val duplicates: StateFlow<DuplicateState> = _dups.asStateFlow()
+
+    private val _holdSpeed = MutableStateFlow(prefs.holdSpeed)
+    val holdSpeed: StateFlow<Float> = _holdSpeed.asStateFlow()
+    private val _seekStep = MutableStateFlow(prefs.seekStepSeconds)
+    val seekStep: StateFlow<Int> = _seekStep.asStateFlow()
+    private val _downloadHeight = MutableStateFlow(prefs.downloadHeight)
+    val downloadHeight: StateFlow<Int> = _downloadHeight.asStateFlow()
+    private val _autoLock = MutableStateFlow(prefs.autoLockSeconds)
+    val autoLock: StateFlow<Int> = _autoLock.asStateFlow()
+
+    private val _ytdlpVersion = MutableStateFlow<String?>(null)
+    val ytdlpVersion: StateFlow<String?> = _ytdlpVersion.asStateFlow()
+    private val _ytdlpUpdating = MutableStateFlow(false)
+    val ytdlpUpdating: StateFlow<Boolean> = _ytdlpUpdating.asStateFlow()
+
+    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    val messages = _messages.asSharedFlow()
+
+    val lastFolderPath: String? get() = prefs.lastFolder
+
+    // ---------------------------------------------------------------- library
+
+    fun refresh() {
+        if (_scanning.value) return
+        viewModelScope.launch {
+            _scanning.value = true
+            try {
+                rescan()
+            } finally {
+                _scanning.value = false
+                _loaded.value = true
+            }
+        }
+    }
+
+    private suspend fun rescan() {
+        _favorites.value = prefs.favorites   // Cram Session may have renamed favourites
+        val list = repo.scan(includeVault = _unlocked.value)
+        _folders.value = list
+        pruneFavorites()
+        refreshAmbience(list)
+    }
+
+    private var ambienceJob: Job? = null
+    private fun refreshAmbience(list: List<VideoFolder>) {
+        val covers = list.filter { !it.isHidden }.mapNotNull { it.cover }.sortedByDescending { it.lastModified }
+        ambienceJob?.cancel()
+        ambienceJob = viewModelScope.launch {
+            runCatching { Ambience.colorsFrom(getApplication(), covers) }.onSuccess { _ambience.value = it }
+        }
+    }
+
+    private suspend fun pruneFavorites() = withContext(Dispatchers.IO) {
+        val alive = _favorites.value.filterTo(mutableSetOf()) { File(it).exists() }
+        if (alive.size != _favorites.value.size) setFavorites(alive)
+    }
+
+    fun setViewMode(mode: ViewMode) {
+        _viewMode.value = mode
+        prefs.viewMode = mode
+    }
+
+    // ------------------------------------------------------------------- feed
+
+    fun openFolder(folder: VideoFolder) {
+        prefs.lastFolder = folder.path
+        _feed.value = buildFeed(folder, generation = 0)
+    }
+
+    fun closeFeed() {
+        _feed.value = null
+        refresh()
+    }
+
+    fun onPageSettled(index: Int) {
+        val feed = _feed.value ?: return
+        if (index in feed.playlist.indices) prefs.setIndex(feed.folder.path, index)
+    }
+
+    fun reshuffle() {
+        val feed = _feed.value ?: return
+        prefs.newSeed(feed.folder.path)
+        val fresh = (folders.value + listOfNotNull(allFolder.value)).firstOrNull { it.path == feed.folder.path } ?: feed.folder
+        _feed.value = buildFeed(fresh, feed.generation + 1)
+    }
+
+    fun toggleMute() {
+        _muted.update { !it }
+        prefs.muted = _muted.value
+    }
+
+    private fun buildFeed(folder: VideoFolder, generation: Int): FeedState {
+        val seed = prefs.seed(folder.path)
+        val playlist = folder.videos.sortedBy { it.path }.shuffled(Random(seed))
+        val start = prefs.index(folder.path).coerceIn(0, (playlist.size - 1).coerceAtLeast(0))
+        return FeedState(folder, playlist, start, generation)
+    }
+
+    /** Swap (or remove, when [transform] returns null) a video in the open playlist without reshuffling. */
+    private fun replaceInFeed(old: Video, transform: (Video) -> Video?) {
+        _feed.update { feed ->
+            feed?.copy(playlist = feed.playlist.mapNotNull { if (it.path == old.path) transform(it) else it })
+        }
+    }
+
+    // -------------------------------------------------------------- favorites
+
+    private fun setFavorites(set: Set<String>) {
+        _favorites.value = set
+        prefs.favorites = set
+    }
+
+    fun isFavorite(v: Video) = v.path in _favorites.value
+
+    /** Double-tap: only ever adds, like Instagram. */
+    fun like(v: Video) {
+        if (v.path !in _favorites.value) setFavorites(_favorites.value + v.path)
+    }
+
+    fun toggleFavorite(v: Video) {
+        if (v.path in _favorites.value) {
+            setFavorites(_favorites.value - v.path)
+            say("Removed from Favorites")
+        } else {
+            setFavorites(_favorites.value + v.path)
+            say("Added to Favorites")
+        }
+    }
+
+    private fun movePathInFavorites(old: String, new: String?) {
+        if (old !in _favorites.value) return
+        setFavorites(_favorites.value - old + listOfNotNull(new))
+    }
+
+    // ----------------------------------------------------------- video edits
+
+    fun rename(video: Video, newTitle: String) = viewModelScope.launch {
+        repo.rename(video, newTitle)
+            .onSuccess { renamed ->
+                movePathInFavorites(video.path, renamed.path)
+                replaceInFeed(video) { renamed }
+                say("Renamed to “${renamed.title}”")
+            }
+            .onFailure { say(it.message ?: "Failed to rename") }
+        rescan()
+    }
+
+    fun move(video: Video, dest: VideoFolder) = viewModelScope.launch {
+        _busy.value = Busy("Moving to ${dest.name}…")
+        repo.move(video, File(dest.path))
+            .onSuccess { moved ->
+                movePathInFavorites(video.path, moved.path)
+                val virtualFeed = _feed.value?.folder?.isVirtual == true
+                replaceInFeed(video) { if (virtualFeed) moved else null }
+                say("Moved to ${dest.name}")
+            }
+            .onFailure { say(it.message ?: "Failed to move") }
+        _busy.value = null
+        rescan()
+    }
+
+    fun delete(video: Video) = viewModelScope.launch {
+        repo.delete(video)
+            .onSuccess {
+                movePathInFavorites(video.path, null)
+                replaceInFeed(video) { null }
+                say("Deleted")
+            }
+            .onFailure { say(it.message ?: "Failed to delete") }
+        rescan()
+    }
+
+    // ---------------------------------------------------------------- folders
+
+    fun createFolder(name: String, hidden: Boolean, noMedia: Boolean) = viewModelScope.launch {
+        repo.createFolder(name, hidden, noMedia)
+            .onSuccess { say(if (hidden) "Hidden folder “${it.name}” created" else "Folder “${it.name}” created") }
+            .onFailure { say(it.message ?: "Couldn't create folder") }
+        rescan()
+    }
+
+    fun renameFolder(folder: VideoFolder, name: String) = viewModelScope.launch {
+        repo.renameFolder(folder, name)
+            .onSuccess { dir ->
+                folder.videos.forEach { v -> movePathInFavorites(v.path, File(dir, v.name).absolutePath) }
+                if (prefs.lastFolder == folder.path) prefs.lastFolder = dir.absolutePath
+                movePathInGalleryPrefs(folder.path, dir.absolutePath)
+                say("Renamed to “${dir.name}”")
+            }
+            .onFailure { say(it.message ?: "Couldn't rename folder") }
+        rescan()
+    }
+
+    fun deleteFolder(folder: VideoFolder) = viewModelScope.launch {
+        repo.deleteFolder(folder)
+            .onSuccess {
+                setFavorites(_favorites.value - folder.videos.map { it.path }.toSet())
+                say("Deleted “${folder.name}”")
+            }
+            .onFailure { say(it.message ?: "Couldn't delete folder") }
+        rescan()
+    }
+
+    /** Per-folder override of the app-wide "hide from galleries" default. */
+    fun setNoMedia(folder: VideoFolder, enabled: Boolean) = viewModelScope.launch {
+        prefs.galleryVisible = prefs.galleryVisible - folder.path + (if (enabled) emptySet() else setOf(folder.path))
+        prefs.galleryHidden = prefs.galleryHidden - folder.path + (if (enabled) setOf(folder.path) else emptySet())
+        rescan()
+        val now = _folders.value.firstOrNull { it.path == folder.path }
+        say(
+            when {
+                enabled -> "Hidden from other apps. Some galleries need a minute to catch up."
+                now?.noMedia == true -> "Still hidden: a folder above it hides everything inside"
+                else -> "Visible to other apps again"
+            },
+        )
+    }
+
+    fun setHideFromGalleries(on: Boolean) = viewModelScope.launch {
+        _hideFromGalleries.value = on
+        prefs.hideFromGalleries = on
+        rescan()
+        say(if (on) "Folders hidden from galleries (except ones you chose to show)" else "Folders visible in galleries (except ones you chose to hide)")
+    }
+
+    private fun movePathInGalleryPrefs(old: String, new: String) {
+        if (old in prefs.galleryVisible) prefs.galleryVisible = prefs.galleryVisible - old + new
+        if (old in prefs.galleryHidden) prefs.galleryHidden = prefs.galleryHidden - old + new
+    }
+
+    fun openShuffleAll() {
+        allFolder.value?.let(::openFolder)
+    }
+
+    // ------------------------------------------------------------ Cram Session
+
+    fun setCramHeight(h: Int) { _cramHeight.value = h; prefs.cramHeight = h }
+    fun setCramCharging(on: Boolean) { _cramCharging.value = on; prefs.cramChargingOnly = on }
+
+    suspend fun cramCandidates(videos: List<Video>, progress: (Int, Int) -> Unit) =
+        Cram.candidates(videos, _cramHeight.value, progress)
+
+    fun startCram(paths: List<String>) {
+        if (paths.isEmpty()) return
+        Cram.enqueue(getApplication(), paths, _cramHeight.value, _cramCharging.value)
+        say("Cramming ${pluralVideos(paths.size)} to ${_cramHeight.value}p in the background")
+    }
+
+    /** Cram everything worth cramming in one folder (or a single video). */
+    fun cramQuick(videos: List<Video>) = viewModelScope.launch {
+        val picks = Cram.candidates(videos, _cramHeight.value) { _, _ -> }
+        if (picks.isEmpty()) say("Already small. Nothing to cram at ${_cramHeight.value}p")
+        else startCram(picks.map { it.video.path })
+    }
+
+    fun setHidden(folder: VideoFolder, hidden: Boolean) = viewModelScope.launch {
+        val verb = if (hidden) "Hiding" else "Unhiding"
+        _busy.value = Busy("$verb “${folder.name}”…", 0f)
+        repo.setHidden(folder, hidden) { done, total ->
+            _busy.value = Busy("$verb “${folder.name}”… $done/$total", if (total == 0) 1f else done / total.toFloat())
+        }
+            .onSuccess { dir ->
+                folder.videos.forEach { v -> movePathInFavorites(v.path, File(dir, v.name).absolutePath) }
+                if (prefs.lastFolder == folder.path) prefs.lastFolder = dir.absolutePath
+                say(if (hidden) "“${folder.name}” is now hidden" else "“${folder.name}” is visible again")
+            }
+            .onFailure { say(it.message ?: "Couldn't move the folder") }
+        _busy.value = null
+        rescan()
+    }
+
+    // ------------------------------------------------------------------ vault
+
+    suspend fun unlock(code: String): Boolean {
+        val ok = withContext(Dispatchers.Default) { pin.check(code) }
+        if (ok) {
+            _unlocked.value = true
+            refresh()
+        }
+        return ok
+    }
+
+    /** Fingerprint/face already confirmed it's you. */
+    fun unlockTrusted() {
+        _unlocked.value = true
+        refresh()
+    }
+
+    suspend fun createPin(code: String) {
+        withContext(Dispatchers.Default) { pin.set(code) }
+        _unlocked.value = true
+        refresh()
+    }
+
+    suspend fun checkPin(code: String) = withContext(Dispatchers.Default) { pin.check(code) }
+
+    fun lock() {
+        if (!_unlocked.value) return
+        _unlocked.value = false
+        // Never leave hidden videos on screen.
+        val f = _feed.value
+        if (f != null && (f.folder.isHidden || f.folder.isVirtual)) _feed.value = null
+        _stats.value = StatsState()
+        _dups.value = DuplicateState()
+        refresh()
+    }
+
+    /** Forgot PIN: wipes hidden folders, then removes the PIN. */
+    fun eraseVault() = viewModelScope.launch {
+        withContext(Dispatchers.IO) { repo.vault.deleteRecursively() }
+        pin.clear()
+        setBiometric(false)
+        _unlocked.value = false
+        say("Hidden folders erased and PIN removed")
+        rescan()
+    }
+
+    private var backgroundedAt = 0L
+    fun onAppBackground() { backgroundedAt = SystemClock.elapsedRealtime() }
+    fun onAppForeground() {
+        if (backgroundedAt == 0L) return
+        val away = (SystemClock.elapsedRealtime() - backgroundedAt) / 1000
+        backgroundedAt = 0L
+        if (away >= _autoLock.value) lock()
+    }
+
+    // ------------------------------------------------------------ info/dups
+
+    private var statsJob: Job? = null
+    fun computeStats() {
+        statsJob?.cancel()
+        statsJob = viewModelScope.launch {
+            val videos = repo.allVideos(_unlocked.value)
+            _stats.value = _stats.value.copy(done = false)
+            val map = durationCache.durations(videos) { done, total ->
+                _stats.update { it.copy(progress = if (total == 0) 1f else done / total.toFloat()) }
+            }
+            _stats.value = StatsState(map, 1f, true)
+        }
+    }
+
+    private var dupJob: Job? = null
+    fun findDuplicates() {
+        dupJob?.cancel()
+        dupJob = viewModelScope.launch {
+            _dups.value = DuplicateState(running = true)
+            val videos = repo.allVideos(_unlocked.value)
+            val groups = DuplicateFinder.find(videos) { done, total ->
+                _dups.update { it.copy(progress = if (total == 0) 1f else done / total.toFloat()) }
+            }
+            _dups.value = DuplicateState(running = false, progress = 1f, groups = groups)
+        }
+    }
+
+    fun deleteVideos(videos: List<Video>) = viewModelScope.launch {
+        _busy.value = Busy("Deleting ${videos.size} copies…")
+        var ok = 0
+        videos.forEach { v -> repo.delete(v).onSuccess { ok++; movePathInFavorites(v.path, null) } }
+        _busy.value = null
+        say("Deleted $ok ${if (ok == 1) "copy" else "copies"}")
+        _dups.update { s ->
+            val gone = videos.map { it.path }.toSet()
+            s.copy(groups = s.groups?.map { g -> g.filter { it.path !in gone } }?.filter { it.size > 1 })
+        }
+        rescan()
+    }
+
+    // --------------------------------------------------------------- settings
+
+    fun setHoldSpeed(v: Float) { _holdSpeed.value = v; prefs.holdSpeed = v }
+    fun setSeekStep(v: Int) { _seekStep.value = v; prefs.seekStepSeconds = v }
+    fun setDownloadHeight(v: Int) { _downloadHeight.value = v; prefs.downloadHeight = v }
+    fun setAutoLock(v: Int) { _autoLock.value = v; prefs.autoLockSeconds = v }
+
+    fun loadYtDlpVersion() = viewModelScope.launch {
+        _ytdlpVersion.value = YtDlp.version(getApplication()) ?: "Bundled version (tap Update for the newest)"
+    }
+
+    fun updateYtDlp() = viewModelScope.launch {
+        _ytdlpUpdating.value = true
+        runCatching { YtDlp.update(getApplication()) }
+            .onSuccess { updated -> say(if (updated) "yt-dlp updated" else "yt-dlp is already up to date") }
+            .onFailure { say("Update failed: ${it.message?.take(80)}") }
+        _ytdlpVersion.value = YtDlp.version(getApplication()) ?: "Bundled version"
+        _ytdlpUpdating.value = false
+    }
+
+    fun say(msg: String) {
+        _messages.tryEmit(msg)
+    }
+}

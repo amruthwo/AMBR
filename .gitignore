@@ -1,0 +1,25 @@
+# Build output
+.gradle/
+build/
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+dist/
+
+# Local machine / IDE
+/local.properties
+.idea/
+*.iml
+
+# Signing: NEVER commit these
+keystore/
+keystore.properties
+*.jks
+*.keystore
+
+# Personal working files
+Initial Prompt*.txt
+ambr-editMode.apk

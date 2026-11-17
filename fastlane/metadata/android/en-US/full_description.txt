@@ -1,0 +1,27 @@
+<p><b>AMBR (Airplane Mode Brain Rot)</b> is a short-video feed for videos you already have: a swipeable, shuffled player for your own folders that works entirely offline. No accounts, no ads, no tracking.</p>
+
+<p><b>Watch</b></p>
+<ul>
+<li>Swipe through a shuffled feed of any folder, or <i>Shuffle All</i> across everything</li>
+<li>Tap to mute, double-tap the sides to skip (keep tapping to skip further), double-tap the middle to favorite, hold for 2× speed</li>
+<li>Pinch to zoom videos with baked-in black bars</li>
+<li>Remembers where you left off in every folder</li>
+</ul>
+
+<p><b>Organize</b></p>
+<ul>
+<li>Folders as a list or as 2- or 4-per-row grids</li>
+<li>Rename, move, delete, share and favorite videos</li>
+<li>Hidden folders behind a PIN or fingerprint, stored in app-private storage</li>
+<li>Keeps your videos out of other gallery apps (.nomedia), per folder if you like</li>
+<li>Find and remove exact duplicates</li>
+<li>Brain scan: how many videos, how much space, how long to watch them all</li>
+</ul>
+
+<p><b>Cram Session</b>: shrink big videos to 480p, 720p or 1080p using your phone's hardware encoder, in a queue that survives restarts. Originals are only deleted after the smaller copy is checked.</p>
+
+<p><b>Mind Meld</b>: swap videos and whole folders with a friend's AMBR, phone to phone, over the same Wi-Fi or a private hotspot, by scanning a QR code. No internet needed. Or open your library in any computer's browser to stream, download or upload.</p>
+
+<p><b>Save to AMBR</b>: share a video or a link to AMBR from any app. Links are downloaded with yt-dlp (the engine behind Seal), with optional in-app sign-in for sites that require it.</p>
+
+<p>AMBR needs "All files access" because it organizes the videos in your <i>AMBR</i> folder. Internet is only used when you download from a link.</p>

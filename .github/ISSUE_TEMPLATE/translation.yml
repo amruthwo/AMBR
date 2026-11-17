@@ -1,0 +1,15 @@
+name: Translation
+description: Volunteer to translate AMBR, or report a translation problem
+labels: [translation]
+body:
+  - type: input
+    id: lang
+    attributes:
+      label: Language
+      placeholder: "Spanish (es)"
+    validations: { required: true }
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Want to translate? Spotted a wrong or awkward string? Tell us here.

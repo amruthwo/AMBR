@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon: a play triangle punched out of a soft brain-ish blob. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M7.5,3.5C9,2.6 10.6,2.8 12,3.6C13.4,2.8 15.2,2.7 16.6,3.7C18.6,3.9 20.2,5.6 20.3,7.6C21.6,8.8 21.9,10.8 21,12.4C21.5,14.2 20.7,16.1 19.1,17C18.6,18.8 16.9,20 15,19.9L15,21.5L13,21.5L13,19.6C12.3,19.9 11.7,19.9 11,19.6L11,21.5L9,21.5L9,19.8C7.1,19.9 5.4,18.7 4.9,17C3.3,16.1 2.5,14.2 3,12.4C2.1,10.8 2.4,8.8 3.7,7.6C3.8,5.6 5.4,3.9 7.5,3.5ZM9.5,8L9.5,15.5L15.8,11.75Z" />
+</vector>

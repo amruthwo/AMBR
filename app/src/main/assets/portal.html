@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMBR · {{NAME}}</title>
+<link rel="icon" href="/logo.webp">
+<style>
+@font-face { font-family: Bricolage; src: url(/font.ttf); font-weight: 200 800; }
+:root {
+  --night:#14021f; --ink:#2d0344; --plum:#570859; --berry:#9e1779; --magenta:#d52b84;
+  --pink:#ff7ab8; --glow:#ff8ad0; --text:#f6ddf0; --muted:#c7a9c6; --card:#250a33; --card2:#2f1240; --line:#54394f;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text);
+  background: radial-gradient(1200px 700px at 15% -10%, #5a1270 0%, transparent 60%),
+              radial-gradient(900px 600px at 100% 0%, #3b0a52 0%, transparent 55%), var(--night);
+  background-attachment: fixed;
+}
+h1, h2, h3, .brand { font-family: Bricolage, system-ui, sans-serif; letter-spacing: -.01em; }
+a { color: var(--pink); }
+button, .btn {
+  font: 600 14px Bricolage, system-ui, sans-serif; border: 0; border-radius: 999px; padding: 10px 18px;
+  background: var(--pink); color: #5c0034; cursor: pointer; text-decoration: none; display: inline-flex; gap: 8px; align-items: center;
+  transition: transform .15s cubic-bezier(.3,1.6,.5,1), border-radius .2s;
+}
+button:hover, .btn:hover { transform: scale(1.04); border-radius: 14px; }
+button.ghost, .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+header {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  background: rgba(20,2,31,.75); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,.06);
+}
+header img { width: 44px; height: 40px; object-fit: contain; }
+header .brand { font-size: 22px; font-weight: 800; }
+header .sub { color: var(--muted); font-size: 13px; }
+header .spacer { flex: 1; }
+main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.crumbs { display: flex; gap: 10px; align-items: center; margin: 4px 0 18px; flex-wrap: wrap; }
+.crumbs h2 { margin: 0; font-size: 28px; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.tile {
+  position: relative; aspect-ratio: 3/4; border-radius: 22px; overflow: hidden; cursor: pointer;
+  background: linear-gradient(135deg, var(--plum), var(--ink)); transition: transform .2s cubic-bezier(.3,1.5,.5,1), border-radius .2s;
+}
+.tile:hover { transform: translateY(-3px) scale(1.02); border-radius: 30px; }
+.tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile .shade { position: absolute; inset: 0; background: linear-gradient(transparent 45%, rgba(0,0,0,.85)); }
+.tile .label { position: absolute; left: 12px; right: 12px; bottom: 10px; }
+.tile .label b { display: block; font-family: Bricolage, sans-serif; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .label span { color: rgba(255,255,255,.75); font-size: 12px; }
+.tile .dl { position: absolute; top: 8px; right: 8px; padding: 6px 10px; font-size: 12px; opacity: 0; transition: opacity .2s; }
+.tile:hover .dl { opacity: 1; }
+.badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.55); border-radius: 999px; padding: 3px 8px; font-size: 11px; }
+.drop {
+  margin: 0 0 20px; padding: 22px; border: 2px dashed var(--line); border-radius: 26px; text-align: center; color: var(--muted);
+  transition: border-color .2s, background .2s;
+}
+.drop.over { border-color: var(--pink); background: rgba(255,122,184,.08); color: var(--text); }
+.uploads { display: grid; gap: 8px; margin-top: 12px; text-align: left; }
+.up { background: var(--card); border-radius: 14px; padding: 10px 14px; }
+.up .bar { height: 6px; border-radius: 3px; background: var(--card2); margin-top: 6px; overflow: hidden; }
+.up .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--magenta), var(--glow)); border-radius: 3px; transition: width .2s; }
+.login { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+.login .card { background: var(--card); border-radius: 36px; padding: 36px 28px; max-width: 380px; width: 100%; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.4); }
+.login img { width: 140px; }
+.login h1 { margin: 10px 0 4px; font-size: 28px; }
+.login p { color: var(--muted); margin: 0 0 20px; }
+.code { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.code input {
+  width: 44px; height: 56px; text-align: center; font: 700 24px Bricolage, sans-serif; color: var(--text);
+  background: var(--card2); border: 2px solid transparent; border-radius: 16px; outline: none;
+}
+.code input:focus { border-color: var(--pink); border-radius: 22px; }
+.err { color: #ffb4ab; min-height: 20px; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; place-items: center; z-index: 10; padding: 20px; }
+.modal.on { display: grid; }
+.modal video { max-width: 100%; max-height: 82vh; border-radius: 18px; background: #000; }
+.modal .bar { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+.empty { color: var(--muted); padding: 40px; text-align: center; }
+@media (max-width: 520px) { .grid { grid-template-columns: repeat(2, 1fr); } header .sub { display: none; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="modal" id="player"><div><video id="vid" controls playsinline></video>
+  <div class="bar"><a class="btn" id="vdl">Download</a><button class="ghost" onclick="closePlayer()">Close</button></div></div></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const enc = encodeURIComponent;
+const size = b => { const u = ['B','KB','MB','GB','TB']; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return (b >= 100 || i === 0 ? b.toFixed(0) : b.toFixed(1)) + ' ' + u[i]; };
+let state = { folders: [], current: null, videos: [], name: '{{NAME}}' };
+
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({ credentials: 'same-origin' }, opts));
+  if (r.status === 401) { showLogin(); throw new Error('auth'); }
+  return r.json();
+}
+
+function header(extra = '') {
+  return `<header><img src="/logo.webp" alt=""><div><div class="brand">AMBR</div><div class="sub">Mind Meld with ${esc(state.name)}</div></div>
+    <div class="spacer"></div>${extra}</header>`;
+}
+
+function showLogin(msg = '') {
+  $('#app').innerHTML = `<div class="login"><div class="card"><img src="/logo.webp" alt="AMBR">
+    <h1>Mind Meld</h1><p>Type the 6-digit code shown on <b>${esc(state.name)}</b>.</p>
+    <div class="code">${'<input inputmode="numeric" maxlength="1">'.repeat(6)}</div>
+    <div class="err" id="err">${esc(msg)}</div></div></div>`;
+  const ins = [...document.querySelectorAll('.code input')];
+  ins[0].focus();
+  ins.forEach((el, i) => {
+    el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(-1); if (el.value && i < 5) ins[i + 1].focus(); if (ins.every(x => x.value)) login(ins.map(x => x.value).join('')); });
+    el.addEventListener('keydown', e => { if (e.key === 'Backspace' && !el.value && i > 0) ins[i - 1].focus(); });
+    el.addEventListener('paste', e => { const t = (e.clipboardData.getData('text') || '').replace(/\D/g, ''); if (t.length === 6) { e.preventDefault(); ins.forEach((x, j) => x.value = t[j]); login(t); } });
+  });
+}
+
+async function login(code) {
+  const r = await fetch('/api/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+  const j = await r.json();
+  if (r.ok) { loadFolders(); } else { showLogin(j.error || 'Wrong code'); }
+}
+
+async function loadFolders() {
+  const j = await api('/api/folders');
+  state.name = j.name; state.folders = j.folders; state.current = null;
+  renderFolders();
+}
+
+function renderFolders() {
+  const tiles = state.folders.map(f => `<div class="tile" onclick="openFolder('${f.id}')">
+      ${f.cover ? `<img loading="lazy" src="/thumb/${f.id}/${enc(f.cover)}" alt="">` : ''}
+      ${f.hidden ? '<span class="badge">🔒 hidden</span>' : ''}
+      <div class="shade"></div><div class="label"><b>${esc(f.name)}</b><span>${f.count} videos · ${size(f.bytes)}</span></div></div>`).join('');
+  $('#app').innerHTML = header() + `<main>
+    <div class="crumbs"><h2>Folders</h2></div>
+    ${uploadBox('Drop videos here to send them to a new folder on the phone')}
+    <div class="grid">${tiles || '<div class="empty">No folders yet.</div>'}</div></main>`;
+  wireDrop(null);
+}
+
+async function openFolder(id) {
+  const j = await api('/api/folders/' + id);
+  state.current = { id, name: j.name }; state.videos = j.videos;
+  const tiles = j.videos.map(v => `<div class="tile" onclick="play('${id}', ${JSON.stringify(v.name).replace(/"/g, '&quot;')})">
+      <img loading="lazy" src="/thumb/${id}/${enc(v.name)}" alt="">
+      <a class="btn dl" href="/f/${id}/${enc(v.name)}?dl=1" onclick="event.stopPropagation()">⬇</a>
+      <div class="shade"></div><div class="label"><b>${esc(v.name.replace(/\.[^.]+$/, ''))}</b><span>${size(v.size)}</span></div></div>`).join('');
+  $('#app').innerHTML = header(`<a class="btn ghost" href="/zip/${id}">⬇ Download folder</a>`) + `<main>
+    <div class="crumbs"><button class="ghost" onclick="loadFolders()">← Folders</button><h2>${esc(j.name)}</h2></div>
+    ${uploadBox('Drop videos here to add them to “' + esc(j.name) + '”')}
+    <div class="grid">${tiles || '<div class="empty">This folder is empty.</div>'}</div></main>`;
+  wireDrop(j.name.split('/').pop());
+}
+
+function play(id, name) {
+  const v = $('#vid'); v.src = `/f/${id}/${enc(name)}`; $('#vdl').href = `/f/${id}/${enc(name)}?dl=1`;
+  $('#player').classList.add('on'); v.play().catch(() => {});
+}
+function closePlayer() { const v = $('#vid'); v.pause(); v.removeAttribute('src'); v.load(); $('#player').classList.remove('on'); }
+$('#player').addEventListener('click', e => { if (e.target.id === 'player') closePlayer(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePlayer(); });
+
+function uploadBox(text) {
+  return `<div class="drop" id="drop">${esc(text)} · or <label style="color:var(--pink);cursor:pointer;text-decoration:underline">choose files
+    <input type="file" id="pick" accept="video/*" multiple hidden></label><div class="uploads" id="uploads"></div></div>`;
+}
+
+function wireDrop(folder) {
+  const d = $('#drop');
+  const go = files => {
+    let target = folder;
+    if (!target) { target = prompt('Folder name on the phone:', 'From my computer'); if (!target) return; }
+    uploadAll([...files].filter(f => f.type.startsWith('video/') || /\.(mp4|mkv|webm|mov|m4v|avi|3gp|flv)$/i.test(f.name)), target);
+  };
+  ['dragenter', 'dragover'].forEach(ev => d.addEventListener(ev, e => { e.preventDefault(); d.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => d.addEventListener(ev, e => { e.preventDefault(); d.classList.remove('over'); }));
+  d.addEventListener('drop', e => go(e.dataTransfer.files));
+  $('#pick').addEventListener('change', e => go(e.target.files));
+}
+
+async function uploadAll(files, folder) {
+  for (const f of files) {
+    const row = document.createElement('div'); row.className = 'up';
+    row.innerHTML = `<div>${esc(f.name)} <span style="color:var(--muted)">· ${size(f.size)}</span></div><div class="bar"><i></i></div>`;
+    $('#uploads').appendChild(row);
+    try { await uploadOne(f, folder, p => row.querySelector('i').style.width = (p * 100).toFixed(1) + '%'); row.querySelector('i').style.width = '100%'; }
+    catch (e) { row.style.outline = '1px solid #ffb4ab'; row.querySelector('div').innerHTML += ' — failed, drop it again to resume'; }
+  }
+  if (state.current) openFolder(state.current.id); else loadFolders();
+}
+
+async function uploadOne(file, folder, onp) {
+  const q = `folder=${enc(folder)}&name=${enc(file.name)}&size=${file.size}`;
+  const st = await api('/api/upload/status?' + q);
+  if (st.received < 0) { onp(1); return; }
+  const offset = st.received || 0;
+  await new Promise((ok, fail) => {
+    const x = new XMLHttpRequest();
+    x.open('PUT', `/api/upload?${q}&offset=${offset}`);
+    x.withCredentials = true;
+    x.upload.onprogress = e => onp((offset + e.loaded) / file.size);
+    x.onload = () => x.status === 200 ? ok() : fail(new Error(x.status));
+    x.onerror = fail;
+    x.send(file.slice(offset));
+  });
+}
+
+loadFolders().catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+First public release (3.0.2).
+• Shuffled offline feed with tap/double-tap/hold/pinch gestures
+• Folders, favorites, hidden PIN/fingerprint folders, gallery hiding
+• Mind Meld: phone-to-phone and browser sharing
+• Cram Session: hardware video compression queue
+• Duplicate finder, Brain scan stats
+• Save to AMBR: share links and videos in (yt-dlp), with site sign-ins

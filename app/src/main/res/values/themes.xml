@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark plum window background so there is never a white flash before Compose draws. -->
+    <style name="Theme.AMBR" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ambr_night</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Transparent window for the share sheet: the sender app stays visible behind it. -->
+    <style name="Theme.AMBR.Sheet" parent="Theme.AMBR">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+    <color name="ambr_night">#FF14021F</color>
+</resources>
