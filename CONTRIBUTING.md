@@ -15,7 +15,7 @@ Use the [issue templates](https://github.com/amruthwo/AMBR/issues/new/choose). F
 By contributing you agree your work is licensed under GPL-3.0.
 
 ## Translations
-Translations will be managed on Weblate (link coming soon) so you can translate in your browser without touching code. Until then, open an issue to volunteer.
+Translations are managed on [Weblate](https://hosted.weblate.org/engage/ambr/): translate in your browser, no coding needed, and Weblate sends the changes here as pull requests. Please keep placeholders like `%1$s` intact. Questions about a string? Open a Translation issue.
 
 ## Never commit
 Keystores, `keystore.properties`, passwords, cookies, or personal videos.

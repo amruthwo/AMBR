@@ -11,6 +11,7 @@
   <a href="https://github.com/amruthwo/AMBR/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/amruthwo/AMBR?color=d52b84&label=release"></a>
   <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-570859">
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-9e1779"></a>
+  <a href="https://hosted.weblate.org/engage/ambr/"><img alt="Translation status" src="https://hosted.weblate.org/widget/ambr/svg-badge.svg"></a>
 </p>
 
 ---
@@ -76,7 +77,7 @@ Release builds are signed from `keystore.properties` (git-ignored) or `AMBR_KEYS
 
 ## Contributing & translations
 
-Bug reports and ideas are welcome. Please use the [issue templates](https://github.com/amruthwo/AMBR/issues/new/choose). Pull requests too; see [CONTRIBUTING.md](CONTRIBUTING.md). Translations will be handled through Weblate (link coming soon).
+Bug reports and ideas are welcome. Please use the [issue templates](https://github.com/amruthwo/AMBR/issues/new/choose). Pull requests too; see [CONTRIBUTING.md](CONTRIBUTING.md). Want AMBR in your language? Translate it in your browser on [Weblate](https://hosted.weblate.org/engage/ambr/). No coding needed.
 
 ## Credits
 
