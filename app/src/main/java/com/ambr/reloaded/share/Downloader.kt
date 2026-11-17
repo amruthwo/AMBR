@@ -1,5 +1,7 @@
 package com.ambr.reloaded.share
 
+import com.ambr.reloaded.util.str
+
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -120,7 +122,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // Direct streams (e.g. Reddit) have no useful title of their own, so name the file after the post.
             val outName = prepared.title?.let { t ->
                 t.replace(Regex("[\\\\/:*?\"<>|]"), "_").take(90).replace("%", "%%") + ".%(ext)s"
-            } ?: "%(title).90B [%(id)s].%(ext)s"
+            } ?: str(R.string.downloader_title_90b_id_s_ext)
             val req = YoutubeDLRequest(resolved).apply {
                 addOption("--no-playlist")
                 addOption("--no-mtime")                   // file date = when you saved it
@@ -152,7 +154,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 )
             }
             val name = added.firstOrNull()?.nameWithoutExtension ?: label
-            finished(true, "Saved to $folderName", name)
+            finished(true, str(R.string.downloader_saved_to_x, folderName), name)
             Result.success()
         } catch (e: YoutubeDL.CanceledException) {
             Result.failure()
@@ -161,22 +163,22 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
             android.util.Log.e("AMBR", "Download failed for $url", e)
             val reason = e.message?.lines()?.lastOrNull { it.contains("ERROR", true) }
                 ?.substringAfter("ERROR:")?.trim()?.take(160)
-                ?: e.message?.take(160) ?: "Unknown error"
+                ?: e.message?.take(160) ?: str(R.string.downloader_unknown_error)
             val site = Site.forUrl(url)
             if (e.message.orEmpty().contains("unable to access the Reddit API", ignoreCase = true)) {
                 finished(
-                    false, "Reddit blocked this download",
-                    "Reddit refused this network, and AMBR couldn't find the video on the post's page either. " +
-                        "Try again on another network (Wi-Fi vs. mobile data), or sign in under Settings → Site sign-ins.",
+                    false, str(R.string.downloader_reddit_blocked_this_download),
+                    str(R.string.downloader_reddit_refused_this_network_and) +
+                        str(R.string.downloader_try_again_on_another_network),
                 )
             } else if (site != null && SiteCookies.isAuthError(e.message.orEmpty())) {
                 finished(
-                    false, "${site.label} wants you to sign in",
-                    "Tap to sign in to ${site.label} inside AMBR, then share the video again.",
+                    false, str(R.string.downloader_x_wants_you_to_sign, site.label),
+                    str(R.string.downloader_tap_to_sign_in_to, site.label),
                     signIn = site,
                 )
             } else {
-                finished(false, "Couldn't download", reason)
+                finished(false, str(R.string.downloader_couldn_t_download), reason)
             }
             Result.failure(workDataOf(KEY_ERROR to reason))
         }
@@ -186,13 +188,13 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val cancel = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         val n = NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_ambr)
-            .setContentTitle("Downloading to AMBR")
+            .setContentTitle(str(R.string.downloader_downloading_to_ambr))
             .setContentText(title)
             .setProgress(100, percent, indeterminate)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setColor(0xFFD52B84.toInt())
-            .addAction(0, "Cancel", cancel)
+            .addAction(0, str(R.string.pin_pad_cancel), cancel)
             .build()
         return if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(notifId, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         else ForegroundInfo(notifId, n)
@@ -271,7 +273,7 @@ object DirectImport {
             uris.forEachIndexed { i, uri ->
                 progress(i, uris.size)
                 runCatching {
-                    val name = displayName(context, uri) ?: "Shared video ${System.currentTimeMillis()}.mp4"
+                    val name = displayName(context, uri) ?: str(R.string.downloader_shared_video_x_mp4, System.currentTimeMillis())
                     val safe = name.replace(Regex("""[\\/:*?"<>|]"""), "_")
                     var target = File(dir, safe)
                     var n = 2

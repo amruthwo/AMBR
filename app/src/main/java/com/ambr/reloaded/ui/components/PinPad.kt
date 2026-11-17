@@ -1,5 +1,9 @@
 package com.ambr.reloaded.ui.components
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -85,15 +89,15 @@ fun PinDialog(
     val haptics = LocalHapticFeedback.current
 
     val heading = when {
-        mode == PinMode.Create && firstEntry != null -> "Confirm your PIN"
+        mode == PinMode.Create && firstEntry != null -> str(R.string.pin_pad_confirm_your_pin)
         title != null -> title
-        mode == PinMode.Create -> "Choose a PIN"
-        mode == PinMode.Verify -> "Enter your current PIN"
-        else -> "Unlock hidden folders"
+        mode == PinMode.Create -> str(R.string.pin_pad_choose_a_pin)
+        mode == PinMode.Verify -> str(R.string.pin_pad_enter_your_current_pin)
+        else -> str(R.string.pin_pad_unlock_hidden_folders)
     }
     val hint = error ?: when {
-        mode == PinMode.Create && firstEntry == null -> "$MIN_PIN–$MAX_PIN digits. There's no way to recover it, so pick one you'll remember."
-        mode == PinMode.Create -> "Type it once more"
+        mode == PinMode.Create && firstEntry == null -> str(R.string.pin_pad_x_x_digits_there_s, MIN_PIN, MAX_PIN)
+        mode == PinMode.Create -> str(R.string.pin_pad_type_it_once_more)
         else -> " "
     }
 
@@ -119,7 +123,7 @@ fun PinDialog(
                     onSuccess(code)
                 } else {
                     firstEntry = null
-                    fail("Those didn't match. Start again.")
+                    fail(str(R.string.pin_pad_those_didn_t_match_start))
                 }
             }
             else -> scope.launch {
@@ -129,7 +133,7 @@ fun PinDialog(
                 if (ok) {
                     haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                     onSuccess(code)
-                } else fail("Wrong PIN")
+                } else fail(str(R.string.pin_pad_wrong_pin))
             }
         }
     }
@@ -223,7 +227,7 @@ fun PinDialog(
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     footer?.invoke()
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(str(R.string.pin_pad_cancel)) }
                 }
             }
         }

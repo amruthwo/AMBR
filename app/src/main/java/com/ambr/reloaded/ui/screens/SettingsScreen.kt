@@ -1,5 +1,7 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -78,13 +80,13 @@ import kotlinx.coroutines.launch
 private data class Credit(val name: String, val what: String, val license: String, val url: String)
 
 private val credits = listOf(
-    Credit("Seal", "The share-to-download flow is modelled on Seal by JunkFood02", "GPL-3.0", "https://github.com/JunkFood02/Seal"),
-    Credit("youtubedl-android", "Runs yt-dlp and FFmpeg on Android", "GPL-3.0", "https://github.com/JunkFood02/youtubedl-android"),
-    Credit("yt-dlp", "The downloader engine", "Unlicense", "https://github.com/yt-dlp/yt-dlp"),
-    Credit("FFmpeg", "Merges video and audio streams", "LGPL / GPL", "https://ffmpeg.org"),
-    Credit("AndroidX Media3", "Video playback", "Apache-2.0", "https://developer.android.com/media/media3"),
-    Credit("Coil", "Thumbnails", "Apache-2.0", "https://coil-kt.github.io/coil/"),
-    Credit("Bricolage Grotesque", "Display typeface", "OFL-1.1", "https://fonts.google.com/specimen/Bricolage+Grotesque"),
+    Credit(str(R.string.settings_seal), str(R.string.settings_the_share_to_download_flow), str(R.string.settings_gpl_3_0), "https://github.com/JunkFood02/Seal"),
+    Credit("youtubedl-android", str(R.string.settings_runs_yt_dlp_and_ffmpeg), str(R.string.settings_gpl_3_0), "https://github.com/JunkFood02/youtubedl-android"),
+    Credit("yt-dlp", str(R.string.settings_the_downloader_engine), str(R.string.settings_unlicense), "https://github.com/yt-dlp/yt-dlp"),
+    Credit(str(R.string.settings_ffmpeg), str(R.string.settings_merges_video_and_audio_streams), str(R.string.settings_lgpl_gpl), "https://ffmpeg.org"),
+    Credit(str(R.string.settings_androidx_media3), str(R.string.settings_video_playback), str(R.string.settings_apache_2_0), "https://developer.android.com/media/media3"),
+    Credit(str(R.string.settings_coil), str(R.string.settings_thumbnails), str(R.string.settings_apache_2_0), "https://coil-kt.github.io/coil/"),
+    Credit(str(R.string.settings_bricolage_grotesque), str(R.string.settings_display_typeface), str(R.string.settings_ofl_1_1), "https://fonts.google.com/specimen/Bricolage+Grotesque"),
 )
 
 @Composable
@@ -115,8 +117,8 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                title = { Text(str(R.string.home_settings)) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.cram_back)) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -127,12 +129,12 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
             modifier = Modifier.fillMaxSize(),
         ) {
             item {
-                Section("Library") {
+                Section(str(R.string.settings_library)) {
                     val hide by vm.hideFromGalleries.collectAsStateWithLifecycle()
                     ListItem(
                         leadingContent = { Icon(Icons.Rounded.VisibilityOff, null) },
-                        headlineContent = { Text("Hide AMBR from galleries") },
-                        supportingContent = { Text("Keeps your videos out of Photos and other apps. Long-press a folder to make an exception.") },
+                        headlineContent = { Text(str(R.string.settings_hide_ambr_from_galleries)) },
+                        supportingContent = { Text(str(R.string.settings_keeps_your_videos_out_of)) },
                         trailingContent = { Switch(checked = hide, onCheckedChange = null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.toggleable(hide, role = Role.Switch) { vm.setHideFromGalleries(it) },
@@ -140,23 +142,23 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                 }
             }
             item {
-                Section("Playback") {
-                    Choice("Hold to speed up", listOf(1.5f to "1.5×", 2f to "2×", 3f to "3×"), holdSpeed, vm::setHoldSpeed)
-                    Choice("Double-tap seeks", listOf(5 to "5s", 10 to "10s", 15 to "15s"), seekStep, vm::setSeekStep)
+                Section(str(R.string.settings_playback)) {
+                    Choice(str(R.string.settings_hold_to_speed_up), listOf(1.5f to "1.5×", 2f to "2×", 3f to "3×"), holdSpeed, vm::setHoldSpeed)
+                    Choice(str(R.string.settings_double_tap_seeks), listOf(5 to "5s", 10 to "10s", 15 to "15s"), seekStep, vm::setSeekStep)
                 }
             }
             item {
-                Section("Hidden folders") {
+                Section(str(R.string.settings_hidden_folders)) {
                     Choice(
-                        "Relock after leaving the app",
-                        listOf(0 to "At once", 30 to "30s", 300 to "5 min"),
+                        str(R.string.settings_relock_after_leaving_the_app),
+                        listOf(0 to str(R.string.settings_at_once), 30 to "30s", 300 to str(R.string.settings_5_min)),
                         autoLock, vm::setAutoLock,
                     )
                     if (vm.pinIsSet && canBiometric) {
                         ListItem(
                             leadingContent = { Icon(Icons.Rounded.Fingerprint, null) },
-                            headlineContent = { Text("Unlock with fingerprint") },
-                            supportingContent = { Text("Your PIN still works as a backup") },
+                            headlineContent = { Text(str(R.string.settings_unlock_with_fingerprint)) },
+                            supportingContent = { Text(str(R.string.settings_your_pin_still_works_as)) },
                             trailingContent = { Switch(checked = biometric, onCheckedChange = null) },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                             modifier = Modifier.toggleable(biometric, role = Role.Switch) { on ->
@@ -167,16 +169,16 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                     if (vm.pinIsSet) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                             FilledTonalButton(onClick = { changePinStep = 1 }) {
-                                Icon(Icons.Rounded.Password, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Change PIN")
+                                Icon(Icons.Rounded.Password, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(str(R.string.settings_change_pin))
                             }
                             TextButton(
                                 onClick = { erase = true },
                                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            ) { Text("Forgot PIN…") }
+                            ) { Text(str(R.string.settings_forgot_pin)) }
                         }
                     } else {
                         Text(
-                            "No PIN yet. You'll set one the first time you hide a folder.",
+                            str(R.string.settings_no_pin_yet_you_ll),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -184,10 +186,10 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                 }
             }
             item {
-                Section("Downloads") {
+                Section(str(R.string.settings_downloads)) {
                     Choice(
-                        "Quality",
-                        listOf(480 to "480p", 720 to "720p", 1080 to "1080p", 0 to "Best"),
+                        str(R.string.settings_quality),
+                        listOf(480 to "480p", 720 to "720p", 1080 to "1080p", 0 to str(R.string.settings_best)),
                         height, vm::setDownloadHeight,
                     )
                     Spacer(Modifier.height(8.dp))
@@ -195,18 +197,18 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                         Column(Modifier.weight(1f)) {
                             Text("yt-dlp", style = MaterialTheme.typography.titleSmall)
                             Text(
-                                ytVersion ?: "checking…",
+                                ytVersion ?: str(R.string.settings_checking),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         if (updating) LoadingIndicator(Modifier.size(40.dp))
                         else FilledTonalButton(onClick = { vm.updateYtDlp() }) {
-                            Icon(Icons.Rounded.SystemUpdateAlt, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Update")
+                            Icon(Icons.Rounded.SystemUpdateAlt, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(str(R.string.settings_update))
                         }
                     }
                     Text(
-                        "Sites change often. If a download fails, update yt-dlp and try again.",
+                        str(R.string.settings_sites_change_often_if_a),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp),
@@ -214,10 +216,10 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                 }
             }
             item {
-                Section("Site sign-ins") {
+                Section(str(R.string.settings_site_sign_ins)) {
                     Text(
-                        "Some sites (Reddit, Instagram, X) only share videos with signed-in users. Sign in once here " +
-                            "and downloads use that login. It stays on this phone, in AMBR's private storage.",
+                        str(R.string.settings_some_sites_reddit_instagram_x) +
+                            str(R.string.settings_and_downloads_use_that_login),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -226,10 +228,10 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                         val signedIn = remember(signInTick) { SiteCookies.isSignedIn(context, site) }
                         ListItem(
                             headlineContent = { Text(site.label) },
-                            supportingContent = { Text(if (signedIn) "Signed in" else "Not signed in") },
+                            supportingContent = { Text(if (signedIn) str(R.string.settings_signed_in) else str(R.string.settings_not_signed_in)) },
                             trailingContent = {
-                                if (signedIn) TextButton(onClick = { SiteCookies.signOut(context, site); signInTick++ }) { Text("Sign out") }
-                                else FilledTonalButton(onClick = { context.startActivity(SiteLoginActivity.intent(context, site)) }) { Text("Sign in") }
+                                if (signedIn) TextButton(onClick = { SiteCookies.signOut(context, site); signInTick++ }) { Text(str(R.string.settings_sign_out)) }
+                                else FilledTonalButton(onClick = { context.startActivity(SiteLoginActivity.intent(context, site)) }) { Text(str(R.string.settings_sign_in)) }
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         )
@@ -237,27 +239,27 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                 }
             }
             item {
-                Section("About") {
+                Section(str(R.string.settings_about)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(painterResource(R.drawable.ambr_logo), null, Modifier.size(56.dp))
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("AMBR · Airplane Mode Brain Rot", style = MaterialTheme.typography.titleMedium)
+                            Text(str(R.string.settings_ambr_airplane_mode_brain_rot), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Version ${BuildConfigInfo.versionName(context)}",
+                                str(R.string.settings_version_x, BuildConfigInfo.versionName(context)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("Built with", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(str(R.string.settings_built_with), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     credits.forEach { c ->
                         ListItem(
                             headlineContent = { Text(c.name) },
                             supportingContent = { Text("${c.what} · ${c.license}") },
                             trailingContent = {
-                                IconButton(onClick = { open(c.url) }) { Icon(Icons.AutoMirrored.Rounded.OpenInNew, "Open ${c.name}") }
+                                IconButton(onClick = { open(c.url) }) { Icon(Icons.AutoMirrored.Rounded.OpenInNew, str(R.string.settings_open_x, c.name)) }
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         )
@@ -276,10 +278,10 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
         )
         3 -> PinDialog(
             mode = PinMode.Verify,
-            title = "Confirm your PIN to turn on fingerprint",
+            title = str(R.string.settings_confirm_your_pin_to_turn),
             onDismiss = { changePinStep = 0 },
             check = { vm.checkPin(it) },
-            onSuccess = { changePinStep = 0; vm.setBiometric(true); vm.say("Fingerprint unlock on") },
+            onSuccess = { changePinStep = 0; vm.setBiometric(true); vm.say(str(R.string.settings_fingerprint_unlock_on)) },
         )
         2 -> PinDialog(
             mode = PinMode.Create,
@@ -287,7 +289,7 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
             onDismiss = { changePinStep = 0 },
             onSuccess = { code ->
                 changePinStep = 0
-                scope.launch { vm.createPin(code); vm.say("PIN changed") }
+                scope.launch { vm.createPin(code); vm.say(str(R.string.settings_pin_changed)) }
             },
         )
     }
@@ -295,20 +297,20 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
         AlertDialog(
             onDismissRequest = { erase = false },
             icon = { Icon(Icons.Rounded.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Erase hidden folders?") },
+            title = { Text(str(R.string.settings_erase_hidden_folders)) },
             text = {
                 Text(
-                    "A forgotten PIN can't be recovered. The only way back is to permanently delete every hidden folder " +
-                        "and its videos, then set a new PIN.",
+                    str(R.string.settings_a_forgotten_pin_can_t) +
+                        str(R.string.settings_and_its_videos_then_set),
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = { erase = false; vm.eraseVault() },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Erase everything hidden") }
+                ) { Text(str(R.string.settings_erase_everything_hidden)) }
             },
-            dismissButton = { TextButton(onClick = { erase = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { erase = false }) { Text(str(R.string.pin_pad_cancel)) } },
         )
     }
 }

@@ -1,5 +1,9 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,12 +71,12 @@ fun RenameDialog(video: Video, onDismiss: () -> Unit, onConfirm: (String) -> Uni
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.DriveFileRenameOutline, null) },
-        title = { Text("Rename video") },
+        title = { Text(str(R.string.rename_video)) },
         text = {
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
-                label = { Text("New name") },
+                label = { Text(str(R.string.new_name)) },
                 suffix = { if (video.extension.isNotEmpty()) Text(".${video.extension}") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -81,8 +85,8 @@ fun RenameDialog(video: Video, onDismiss: () -> Unit, onConfirm: (String) -> Uni
                 modifier = Modifier.focusRequester(focus),
             )
         },
-        confirmButton = { TextButton(onClick = { onConfirm(value.text) }, enabled = valid) { Text("Rename") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onConfirm(value.text) }, enabled = valid) { Text(str(R.string.rename)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.pin_pad_cancel)) } },
     )
 }
 
@@ -91,15 +95,15 @@ fun DeleteDialog(video: Video, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-        title = { Text("Delete video?") },
-        text = { Text("“${video.title}” will be permanently removed from your phone.") },
+        title = { Text(str(R.string.delete_video)) },
+        text = { Text(str(R.string.x_will_be_permanently_removed, video.title)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) { Text("Delete") }
+            ) { Text(str(R.string.delete)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.pin_pad_cancel)) } },
     )
 }
 
@@ -107,7 +111,7 @@ fun DeleteDialog(video: Video, onDismiss: () -> Unit, onConfirm: () -> Unit) {
 fun MoveSheet(video: Video, folders: List<VideoFolder>, onDismiss: () -> Unit, onMove: (VideoFolder) -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Text(
-            "Move “${video.title}” to…",
+            str(R.string.move_x_to, video.title),
             style = MaterialTheme.typography.titleLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -115,7 +119,7 @@ fun MoveSheet(video: Video, folders: List<VideoFolder>, onDismiss: () -> Unit, o
         )
         if (folders.isEmpty()) {
             Text(
-                "There are no other folders yet.",
+                str(R.string.there_are_no_other_folders),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(24.dp),
             )

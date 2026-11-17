@@ -1,5 +1,9 @@
 package com.ambr.reloaded.data
 
+import com.ambr.reloaded.util.pluralVideos
+
+import com.ambr.reloaded.util.str
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -171,7 +175,7 @@ object Cram {
 
     /** Re-encodes [src] to H.264/AAC MP4 at [height] (short side) into [out]. Runs on the main looper. */
     /** Thrown when the new file is on track to be no smaller than the original. */
-    class NotWorthIt : Exception("Wouldn't get smaller")
+    class NotWorthIt : Exception(str(R.string.cram_wouldn_t_get_smaller))
 
     suspend fun transcode(context: Context, src: File, out: File, height: Int, probe: Probe, onProgress: (Float) -> Unit) =
         withContext(Dispatchers.Main) {
@@ -234,7 +238,7 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
     override suspend fun doWork(): Result {
         Cram.ensureChannel(applicationContext)
-        setForeground(info("Getting ready…", 0f, 0, 0))
+        setForeground(info(str(R.string.cram_getting_ready), 0f, 0, 0))
         while (true) {
             coroutineContext.ensureActive()
             val q = Cram.readQueue(applicationContext)
@@ -278,15 +282,15 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
     /** Checks the new file, swaps it in, keeps date + favourite. Returns bytes saved (0 if kept original). */
     private fun finalize(src: File, tmp: File, before: Probe): Long {
-        val after = Cram.probe(tmp) ?: error("New file doesn't play")
-        check(after.durationMs >= before.durationMs * 0.97 - 500) { "New file is shorter than the original" }
+        val after = Cram.probe(tmp) ?: error(str(R.string.cram_new_file_doesn_t_play))
+        check(after.durationMs >= before.durationMs * 0.97 - 500) { str(R.string.cram_new_file_is_shorter_than) }
         if (tmp.length() >= src.length() * 0.9) { tmp.delete(); return 0L }  // not worth it: keep the original
         val saved = src.length() - tmp.length()
         val mtime = src.lastModified()
         var target = File(src.parentFile, "${src.nameWithoutExtension}.mp4")
-        check(src.delete()) { "Couldn't remove the original" }
-        if (target.exists()) target = File(src.parentFile, "${src.nameWithoutExtension} (small).mp4")
-        check(tmp.renameTo(target)) { "Couldn't rename the new file" }
+        check(src.delete()) { str(R.string.cram_couldn_t_remove_the_original) }
+        if (target.exists()) target = File(src.parentFile, str(R.string.cram_x_small_mp4, src.nameWithoutExtension))
+        check(tmp.renameTo(target)) { str(R.string.cram_couldn_t_rename_the_new) }
         target.setLastModified(mtime)
         if (src.absolutePath != target.absolutePath && src.absolutePath in prefs.favorites) {
             prefs.favorites = prefs.favorites - src.absolutePath + target.absolutePath
@@ -301,13 +305,13 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val pause = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         val n = NotificationCompat.Builder(applicationContext, Cram.channel())
             .setSmallIcon(R.drawable.ic_stat_ambr)
-            .setContentTitle(if (total > 0) "Cram Session · $index of $total" else "Cram Session")
+            .setContentTitle(if (total > 0) str(R.string.cram_cram_session_x_of_x, index, total) else str(R.string.cram_cram_session))
             .setContentText(name)
             .setProgress(100, (fraction * 100).toInt(), total == 0)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setColor(0xFFD52B84.toInt())
-            .addAction(0, "Pause", pause)
+            .addAction(0, str(R.string.bits_pause), pause)
             .build()
         return if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(notifId, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         else ForegroundInfo(notifId, n)
@@ -319,15 +323,15 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             applicationContext, 0, Intent(applicationContext, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
         val text = buildString {
-            append("Shrank ${q.done} ${if (q.done == 1) "video" else "videos"} · saved ${formatBytes(q.saved)}")
-            if (q.kept > 0) append(" · ${q.kept} already as small as it gets (kept)")
-            if (q.failed > 0) append(" · ${q.failed} couldn't be converted (originals kept)")
+            append(str(R.string.cram_shrank_x_x_saved_x, pluralVideos(q.done), formatBytes(q.saved)))
+            if (q.kept > 0) append(str(R.string.cram_x_already_as_small_as, q.kept))
+            if (q.failed > 0) append(str(R.string.cram_x_couldn_t_be_converted, q.failed))
         }
         NotificationManagerCompat.from(applicationContext).notify(
             notifId + 1,
             NotificationCompat.Builder(applicationContext, Cram.channel())
                 .setSmallIcon(R.drawable.ic_stat_ambr)
-                .setContentTitle("Cram Session finished")
+                .setContentTitle(str(R.string.cram_cram_session_finished))
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setColor(0xFFD52B84.toInt())

@@ -21,7 +21,14 @@ fun formatBytes(bytes: Long): String {
     else String.format(Locale.US, "%.1f %s", value, units[i])
 }
 
-fun pluralVideos(n: Int) = if (n == 1) "1 video" else "$n videos"
+fun pluralVideos(n: Int): String = com.ambr.reloaded.AmbrApp.instance.resources.getQuantityString(com.ambr.reloaded.R.plurals.videos, n, n)
+
+/**
+ * Looks up a translatable string from res/values(-xx)/strings.xml. Works from Compose screens,
+ * ViewModels, workers and notifications alike (AMBR's activity is recreated on language change).
+ */
+fun str(@androidx.annotation.StringRes id: Int, vararg args: Any?): String =
+    com.ambr.reloaded.AmbrApp.instance.getString(id, *args)
 
 /** MediaMetadataRetriever is only AutoCloseable on Android 10+; this releases it on every version. */
 inline fun <T> withRetriever(path: String, block: (android.media.MediaMetadataRetriever) -> T): T {
@@ -33,3 +40,7 @@ inline fun <T> withRetriever(path: String, block: (android.media.MediaMetadataRe
         runCatching { r.release() }
     }
 }
+
+/** Quantity strings ("1 copy" / "3 copies"), correct for each language's plural rules. */
+fun plural(@androidx.annotation.PluralsRes id: Int, n: Int): String =
+    com.ambr.reloaded.AmbrApp.instance.resources.getQuantityString(id, n, n)

@@ -1,5 +1,7 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -178,8 +180,8 @@ fun MindMeldScreen(vm: AmbrViewModel, meld: MeldViewModel, snackbar: SnackbarHos
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text("Mind Meld") },
-                navigationIcon = { IconButton(onClick = { if (stage == MeldStage.Idle) exit() else meld.leave() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                title = { Text(str(R.string.home_mind_meld)) },
+                navigationIcon = { IconButton(onClick = { if (stage == MeldStage.Idle) exit() else meld.leave() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.cram_back)) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -200,7 +202,7 @@ fun MindMeldScreen(vm: AmbrViewModel, meld: MeldViewModel, snackbar: SnackbarHos
                             if (has(Manifest.permission.CAMERA)) meld.startJoining() else cameraLauncher.launch(Manifest.permission.CAMERA)
                         },
                     )
-                    MeldStage.Starting, MeldStage.Connecting -> Busy(if (s == MeldStage.Starting) "Warming up the brain link…" else "Connecting…")
+                    MeldStage.Starting, MeldStage.Connecting -> Busy(if (s == MeldStage.Starting) str(R.string.mind_meld_warming_up_the_brain_link) else str(R.string.mind_meld_connecting))
                     MeldStage.Hosting -> HostView(meld, onStop = { meld.leave() })
                     MeldStage.Joining -> JoinView(meld, cameraOk = has(Manifest.permission.CAMERA))
                     MeldStage.Connected -> Brains(meld, unlocked)
@@ -263,24 +265,24 @@ private fun Landing(
     ) {
         MeldArt()
         Text(
-            "Swap videos with a friend's AMBR, phone to phone, no internet needed. Or open your library on a computer.",
+            str(R.string.mind_meld_swap_videos_with_a_friend),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(10.dp))
         TextButton(onClick = { renaming = true }) {
-            Text("You appear as “$name”")
+            Text(str(R.string.mind_meld_you_appear_as_x, name))
             Spacer(Modifier.width(6.dp))
-            Icon(Icons.Rounded.Edit, "Rename", Modifier.size(16.dp))
+            Icon(Icons.Rounded.Edit, str(R.string.rename), Modifier.size(16.dp))
         }
         Spacer(Modifier.height(14.dp))
 
         Card(shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
             Column(Modifier.padding(18.dp)) {
-                Text("Start a Mind Meld", style = MaterialTheme.typography.titleLarge)
+                Text(str(R.string.mind_meld_start_a_mind_meld), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "Shows a QR code for your friend (or a computer) to connect.",
+                    str(R.string.mind_meld_shows_a_qr_code_for),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -288,16 +290,16 @@ private fun Landing(
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     SegmentedButton(!hotspot, { hotspot = false }, SegmentedButtonDefaults.itemShape(0, 2), icon = {
                         Icon(Icons.Rounded.Wifi, null, Modifier.size(18.dp))
-                    }) { Text("Same Wi-Fi") }
+                    }) { Text(str(R.string.mind_meld_same_wi_fi)) }
                     SegmentedButton(hotspot, { hotspot = true }, SegmentedButtonDefaults.itemShape(1, 2), icon = {
                         Icon(Icons.Rounded.WifiTethering, null, Modifier.size(18.dp))
-                    }) { Text("Make a hotspot") }
+                    }) { Text(str(R.string.mind_meld_make_a_hotspot)) }
                 }
                 if (unlocked) {
                     ListItem(
                         leadingContent = { Icon(Icons.Rounded.Lock, null) },
-                        headlineContent = { Text("Include hidden folders") },
-                        supportingContent = { Text("Off unless you switch it on") },
+                        headlineContent = { Text(str(R.string.mind_meld_include_hidden_folders)) },
+                        supportingContent = { Text(str(R.string.mind_meld_off_unless_you_switch_it)) },
                         trailingContent = { Switch(checked = shareHidden, onCheckedChange = null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.toggleable(shareHidden, role = Role.Switch, onValueChange = onShareHidden),
@@ -307,15 +309,15 @@ private fun Landing(
                 Button(
                     onClick = { onHost(hotspot) },
                     modifier = Modifier.fillMaxWidth().height(ButtonDefaults.MediumContainerHeight),
-                ) { Text("Start", style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight)) }
+                ) { Text(str(R.string.mind_meld_start), style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight)) }
             }
         }
         Spacer(Modifier.height(12.dp))
         Card(shape = RoundedCornerShape(32.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
             Column(Modifier.padding(18.dp)) {
-                Text("Join a Mind Meld", style = MaterialTheme.typography.titleLarge)
+                Text(str(R.string.mind_meld_join_a_mind_meld), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    "Scan the QR code on your friend's screen, or pick them from nearby.",
+                    str(R.string.mind_meld_scan_the_qr_code_on),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -326,7 +328,7 @@ private fun Landing(
                 ) {
                     Icon(Icons.Rounded.QrCodeScanner, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Scan to join", style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight))
+                    Text(str(R.string.mind_meld_scan_to_join), style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight))
                 }
             }
         }
@@ -337,10 +339,10 @@ private fun Landing(
         var draft by remember { mutableStateOf(name) }
         AlertDialog(
             onDismissRequest = { renaming = false },
-            title = { Text("Your Mind Meld name") },
+            title = { Text(str(R.string.mind_meld_your_mind_meld_name)) },
             text = { OutlinedTextField(draft, { draft = it.take(40) }, singleLine = true, shape = RoundedCornerShape(16.dp)) },
-            confirmButton = { TextButton(onClick = { meld.setMyName(draft); name = meld.myName; renaming = false }) { Text("Save") } },
-            dismissButton = { TextButton(onClick = { renaming = false }) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = { meld.setMyName(draft); name = meld.myName; renaming = false }) { Text(str(R.string.mind_meld_save)) } },
+            dismissButton = { TextButton(onClick = { renaming = false }) { Text(str(R.string.pin_pad_cancel)) } },
         )
     }
 }
@@ -349,7 +351,7 @@ private fun Landing(
 private fun HostView(meld: MeldViewModel, onStop: () -> Unit) {
     val host by meld.host.collectAsStateWithLifecycle()
     val peers by meld.peers.collectAsStateWithLifecycle()
-    val h: HostInfo = host ?: return Busy("Starting…")
+    val h: HostInfo = host ?: return Busy(str(R.string.cram_starting))
     Column(
         Modifier
             .fillMaxSize()
@@ -367,9 +369,9 @@ private fun HostView(meld: MeldViewModel, onStop: () -> Unit) {
             }
         }
         Spacer(Modifier.height(14.dp))
-        Text("Friend: AMBR → Mind Meld → Scan to join", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+        Text(str(R.string.mind_meld_friend_ambr_mind_meld_scan), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))
-        Text("Code", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(str(R.string.mind_meld_code), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             h.code.chunked(3).joinToString(" "),
             style = MaterialTheme.typography.displayMedium.copy(letterSpacing = 6.sp),
@@ -382,16 +384,16 @@ private fun HostView(meld: MeldViewModel, onStop: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.Computer, null)
                     Spacer(Modifier.width(10.dp))
-                    Text("On a computer", style = MaterialTheme.typography.titleMedium)
+                    Text(str(R.string.mind_meld_on_a_computer), style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(8.dp))
                 h.hotspot?.let { hs ->
-                    Text("1. Join the Wi-Fi network:", style = MaterialTheme.typography.bodyMedium)
+                    Text(str(R.string.mind_meld_1_join_the_wi_fi), style = MaterialTheme.typography.bodyMedium)
                     Mono("${hs.ssid}  ·  ${hs.pass}")
-                    Text("2. Open:", style = MaterialTheme.typography.bodyMedium)
-                } ?: Text("On the same Wi-Fi, open:", style = MaterialTheme.typography.bodyMedium)
+                    Text(str(R.string.mind_meld_2_open), style = MaterialTheme.typography.bodyMedium)
+                } ?: Text(str(R.string.mind_meld_on_the_same_wi_fi), style = MaterialTheme.typography.bodyMedium)
                 h.urls.firstOrNull()?.let { Mono(it) }
-                Text("…and type the code above.", style = MaterialTheme.typography.bodyMedium)
+                Text(str(R.string.mind_meld_and_type_the_code_above), style = MaterialTheme.typography.bodyMedium)
             }
         }
         if (peers.isNotEmpty()) {
@@ -400,7 +402,7 @@ private fun HostView(meld: MeldViewModel, onStop: () -> Unit) {
                 ListItem(
                     leadingContent = { Icon(if (p.isBrowser) Icons.Rounded.Computer else Icons.Rounded.Folder, null) },
                     headlineContent = { Text(p.name) },
-                    supportingContent = { Text("Connected") },
+                    supportingContent = { Text(str(R.string.mind_meld_connected)) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
             }
@@ -409,11 +411,11 @@ private fun HostView(meld: MeldViewModel, onStop: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LoadingIndicator(Modifier.size(36.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Waiting for a brain to connect…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(str(R.string.mind_meld_waiting_for_a_brain_to), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Spacer(Modifier.height(16.dp))
-        OutlinedButton(onClick = onStop) { Text("Stop Mind Meld") }
+        OutlinedButton(onClick = onStop) { Text(str(R.string.mind_meld_stop_mind_meld)) }
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -470,27 +472,27 @@ private fun JoinView(meld: MeldViewModel, cameraOk: Boolean) {
                 }
             } else {
                 Text(
-                    "Camera permission is needed to scan.\nYou can still join someone nearby below.",
+                    str(R.string.mind_meld_camera_permission_is_needed_to),
                     color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(24.dp),
                 )
             }
         }
         Spacer(Modifier.height(10.dp))
-        Text("Point at the QR code on your friend's AMBR", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+        Text(str(R.string.mind_meld_point_at_the_qr_code), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         Spacer(Modifier.height(18.dp))
-        Text("Nearby on this Wi-Fi", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
+        Text(str(R.string.mind_meld_nearby_on_this_wi_fi), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
         if (nearby.isEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
                 LoadingIndicator(Modifier.size(32.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Looking…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(str(R.string.mind_meld_looking), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         nearby.forEach { n ->
             ListItem(
                 leadingContent = { Image(painterResource(R.drawable.ambr_logo), null, Modifier.size(40.dp)) },
                 headlineContent = { Text(n.name) },
-                supportingContent = { Text("Tap and enter the code on their screen") },
+                supportingContent = { Text(str(R.string.mind_meld_tap_and_enter_the_code)) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clip(RoundedCornerShape(20.dp)).clickable { codeFor = n },
             )
@@ -500,7 +502,7 @@ private fun JoinView(meld: MeldViewModel, cameraOk: Boolean) {
     codeFor?.let { n ->
         PinDialog(
             mode = PinMode.Verify,
-            title = "Code on ${n.name}",
+            title = str(R.string.mind_meld_code_on_x, n.name),
             length = 6,
             onDismiss = { codeFor = null },
             check = { meld.joinWithCode(n, it) },
@@ -527,12 +529,12 @@ private fun Brains(meld: MeldViewModel, unlocked: Boolean) {
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("You  🧠⚡🧠  $remoteName", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            TextButton(onClick = { meld.leave() }) { Text("Leave") }
+            Text(str(R.string.mind_meld_you_x, remoteName), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            TextButton(onClick = { meld.leave() }) { Text(str(R.string.mind_meld_leave)) }
         }
         PrimaryTabRow(selectedTabIndex = tab, containerColor = Color.Transparent) {
-            Tab(tab == 0, { tab = 0 }, text = { Text("Their brain") }, icon = { Icon(Icons.Rounded.CallReceived, null) })
-            Tab(tab == 1, { tab = 1 }, text = { Text("Your brain") }, icon = { Icon(Icons.Rounded.Send, null) })
+            Tab(tab == 0, { tab = 0 }, text = { Text(str(R.string.mind_meld_their_brain)) }, icon = { Icon(Icons.Rounded.CallReceived, null) })
+            Tab(tab == 1, { tab = 1 }, text = { Text(str(R.string.mind_meld_your_brain)) }, icon = { Icon(Icons.Rounded.Send, null) })
         }
         LazyColumn(
             Modifier.weight(1f),
@@ -540,7 +542,7 @@ private fun Brains(meld: MeldViewModel, unlocked: Boolean) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (tab == 0) {
-                if (theirs.isEmpty()) item { Text("Nothing shared yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                if (theirs.isEmpty()) item { Text(str(R.string.mind_meld_nothing_shared_yet), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 items(theirs, key = { "r" + it.id }) { f ->
                     val whole = f.id in pickedFolders
                     val expanded = f.id in open
@@ -663,7 +665,7 @@ private fun FolderPickCard(
                     }
                     Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, if (expanded) "Collapse" else "Show videos")
+                Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, if (expanded) str(R.string.mind_meld_collapse) else str(R.string.mind_meld_show_videos))
             }
             AnimatedVisibility(expanded) {
                 Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp)) { content() }
@@ -704,8 +706,8 @@ private fun TransfersBar(transfers: List<com.ambr.reloaded.meld.Transfer>, onRet
             Text(
                 when {
                     active != null -> "${if (active.sending) "Sending" else "Taking"} ${active.name}"
-                    failed > 0 -> "$failed didn't finish"
-                    else -> "All done · $doneCount moved"
+                    failed > 0 -> str(R.string.mind_meld_x_didn_t_finish, failed)
+                    else -> str(R.string.mind_meld_all_done_x_moved, doneCount)
                 },
                 style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
@@ -713,22 +715,22 @@ private fun TransfersBar(transfers: List<com.ambr.reloaded.meld.Transfer>, onRet
                 Spacer(Modifier.height(8.dp))
                 LinearWavyProgressIndicator(progress = { if (active.total > 0) active.done / active.total.toFloat() else 0f }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(6.dp))
-                Text("$left left · ${formatBytes(active.done)} of ${formatBytes(active.total)}", style = MaterialTheme.typography.bodySmall)
+                Text(str(R.string.mind_meld_x_left_x_of_x, left, formatBytes(active.done), formatBytes(active.total)), style = MaterialTheme.typography.bodySmall)
             }
             Row {
-                if (failed > 0) TextButton(onClick = onRetry) { Text("Retry") }
-                if (left == 0) TextButton(onClick = onClear) { Text("Clear") }
+                if (failed > 0) TextButton(onClick = onRetry) { Text(str(R.string.mind_meld_retry)) }
+                if (left == 0) TextButton(onClick = onClear) { Text(str(R.string.mind_meld_clear)) }
             }
             AnimatedVisibility(expanded) {
                 Column {
                     transfers.takeLast(30).forEach { t ->
                         Text(
                             "${if (t.sending) "↑" else "↓"} ${t.name} · " + when (t.state) {
-                                TransferState.Queued -> "waiting"
+                                TransferState.Queued -> str(R.string.meld_transfer_waiting)
                                 TransferState.Active -> "${(100 * t.done / t.total.coerceAtLeast(1))}%"
-                                TransferState.Done -> "done"
-                                TransferState.Skipped -> "already there"
-                                TransferState.Failed -> "failed: ${t.error ?: "?"}"
+                                TransferState.Done -> str(R.string.meld_transfer_done)
+                                TransferState.Skipped -> str(R.string.mind_meld_already_there)
+                                TransferState.Failed -> str(R.string.mind_meld_failed_x, t.error ?: "?")
                             },
                             style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )

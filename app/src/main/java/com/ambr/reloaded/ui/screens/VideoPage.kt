@@ -1,5 +1,9 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import android.os.Build
 import android.view.TextureView
 import androidx.compose.animation.AnimatedVisibility
@@ -411,7 +415,7 @@ private fun Controls(
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 AnimatedVisibility(favorite, enter = scaleIn(spring(0.4f, 500f)), exit = scaleOut()) {
                     Icon(
-                        Icons.Rounded.Favorite, "Favorite",
+                        Icons.Rounded.Favorite, str(R.string.video_favorite),
                         tint = Ambr.Glow,
                         modifier = Modifier
                             .padding(end = 6.dp)
@@ -472,7 +476,7 @@ private fun VideoSplitButton(
                 SplitButtonDefaults.LeadingButton(onClick = onToggleMute, colors = colors) {
                     Icon(
                         if (muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp,
-                        contentDescription = if (muted) "Unmute" else "Mute",
+                        contentDescription = if (muted) str(R.string.video_unmute) else str(R.string.video_mute),
                         modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize),
                     )
                 }
@@ -486,7 +490,7 @@ private fun VideoSplitButton(
                     val rotation by animateFloatAsState(if (menuOpen) 180f else 0f, spring(0.5f, 500f), label = "chev")
                     Icon(
                         Icons.Rounded.KeyboardArrowDown,
-                        contentDescription = "Video options",
+                        contentDescription = str(R.string.video_video_options),
                         modifier = Modifier
                             .size(SplitButtonDefaults.TrailingIconSize)
                             .graphicsLayer { rotationZ = rotation },
@@ -501,15 +505,15 @@ private fun VideoSplitButton(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             MenuRow(
-                if (favorite) "Unfavorite" else "Favorite",
+                if (favorite) str(R.string.video_unfavorite) else str(R.string.video_favorite),
                 if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
             ) { onAction(VideoAction.Favorite) }
-            MenuRow("Share", Icons.Rounded.Share) { onAction(VideoAction.Share) }
+            MenuRow(str(R.string.video_share), Icons.Rounded.Share) { onAction(VideoAction.Share) }
             HorizontalDivider(Modifier.padding(vertical = 4.dp, horizontal = 12.dp))
-            MenuRow("Rename", Icons.Rounded.DriveFileRenameOutline) { onAction(VideoAction.Rename) }
-            MenuRow("Move to…", Icons.AutoMirrored.Rounded.DriveFileMove) { onAction(VideoAction.Move) }
-            MenuRow("Cram (shrink)", Icons.Rounded.Compress) { onAction(VideoAction.Cram) }
-            MenuRow("Delete", Icons.Rounded.DeleteOutline, danger = true) { onAction(VideoAction.Delete) }
+            MenuRow(str(R.string.rename), Icons.Rounded.DriveFileRenameOutline) { onAction(VideoAction.Rename) }
+            MenuRow(str(R.string.video_move_to), Icons.AutoMirrored.Rounded.DriveFileMove) { onAction(VideoAction.Move) }
+            MenuRow(str(R.string.video_cram_shrink), Icons.Rounded.Compress) { onAction(VideoAction.Cram) }
+            MenuRow(str(R.string.delete), Icons.Rounded.DeleteOutline, danger = true) { onAction(VideoAction.Delete) }
         }
     }
 }

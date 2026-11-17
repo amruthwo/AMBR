@@ -1,5 +1,9 @@
 package com.ambr.reloaded.ui.components
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -132,7 +136,7 @@ fun MorphPlayButton(
             ) { isPlaying ->
                 Icon(
                     if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    contentDescription = if (isPlaying) str(R.string.bits_pause) else str(R.string.bits_play),
                     modifier = Modifier.size(size * 0.55f),
                 )
             }

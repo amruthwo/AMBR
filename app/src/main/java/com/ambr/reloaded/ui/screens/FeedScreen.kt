@@ -1,5 +1,7 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -155,7 +157,7 @@ fun FeedScreen(
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
                     containerColor = Color.Black.copy(alpha = 0.38f), contentColor = Color.White,
                 ),
-            ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back to folders") }
+            ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.feed_back_to_folders)) }
             Spacer(Modifier.width(8.dp))
             Surface(shape = RoundedCornerShape(50), color = Color.Black.copy(alpha = 0.38f), contentColor = Color.White) {
                 Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -216,10 +218,10 @@ private fun AllWatchedPage(count: Int, onReshuffle: () -> Unit, onBack: () -> Un
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
             Image(painterResource(R.drawable.ambr_logo), null, Modifier.fillMaxWidth(0.45f))
             Spacer(Modifier.height(24.dp))
-            Text("Brain: fully rotted", style = MaterialTheme.typography.headlineLarge, color = Color.White)
+            Text(str(R.string.feed_brain_fully_rotted), style = MaterialTheme.typography.headlineLarge, color = Color.White)
             Spacer(Modifier.height(8.dp))
             Text(
-                "You've watched all $count videos in this folder.",
+                str(R.string.feed_you_ve_watched_all_x, count),
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
@@ -232,10 +234,10 @@ private fun AllWatchedPage(count: Int, onReshuffle: () -> Unit, onBack: () -> Un
             ) {
                 Icon(Icons.Rounded.Shuffle, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Shuffle & go again", style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight))
+                Text(str(R.string.feed_shuffle_go_again), style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight))
             }
             Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = onBack) { Text("Back to folders", color = Color.White) }
+            OutlinedButton(onClick = onBack) { Text(str(R.string.feed_back_to_folders), color = Color.White) }
         }
     }
 }
@@ -249,8 +251,8 @@ private fun EmptyFolder(name: String, onBack: () -> Unit) {
     ) {
         Image(painterResource(R.drawable.ambr_logo), null, Modifier.size(140.dp))
         Spacer(Modifier.height(16.dp))
-        Text("“$name” is empty", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+        Text(str(R.string.feed_x_is_empty, name), style = MaterialTheme.typography.headlineSmall, color = Color.White)
         Spacer(Modifier.height(16.dp))
-        OutlinedButton(onClick = onBack) { Text("Back to folders", color = Color.White) }
+        OutlinedButton(onClick = onBack) { Text(str(R.string.feed_back_to_folders), color = Color.White) }
     }
 }

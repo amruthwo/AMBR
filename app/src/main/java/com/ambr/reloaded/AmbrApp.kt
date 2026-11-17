@@ -8,6 +8,16 @@ import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
 
 class AmbrApp : Application(), SingletonImageLoader.Factory {
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
+
+    companion object {
+        lateinit var instance: AmbrApp
+            private set
+    }
+
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
             .components { add(VideoFrameDecoder.Factory()) }

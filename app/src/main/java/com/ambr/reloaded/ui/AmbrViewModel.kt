@@ -1,5 +1,11 @@
 package com.ambr.reloaded.ui
 
+import com.ambr.reloaded.util.plural
+
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import android.app.Application
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
@@ -73,7 +79,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     val folders: StateFlow<List<VideoFolder>> = combine(_folders, _favorites) { list, favs ->
         val favVideos = list.flatMap { it.videos }.filter { it.path in favs }
         val favFolder = if (favVideos.isNotEmpty()) {
-            listOf(VideoFolder(VideoFolder.FAVORITES_PATH, "Favorites", favVideos, FolderKind.Favorites))
+            listOf(VideoFolder(VideoFolder.FAVORITES_PATH, str(R.string.ambr_favorites), favVideos, FolderKind.Favorites))
         } else emptyList()
         favFolder + list
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -81,7 +87,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     /** Every video in every visible folder, for Shuffle All. */
     val allFolder: StateFlow<VideoFolder?> = _folders.map { list ->
         val all = list.flatMap { it.videos }
-        if (all.isEmpty()) null else VideoFolder(VideoFolder.ALL_PATH, "Shuffle All", all, FolderKind.All)
+        if (all.isEmpty()) null else VideoFolder(VideoFolder.ALL_PATH, str(R.string.ambr_shuffle_all), all, FolderKind.All)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _hideFromGalleries = MutableStateFlow(prefs.hideFromGalleries)
@@ -247,10 +253,10 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleFavorite(v: Video) {
         if (v.path in _favorites.value) {
             setFavorites(_favorites.value - v.path)
-            say("Removed from Favorites")
+            say(str(R.string.ambr_removed_from_favorites))
         } else {
             setFavorites(_favorites.value + v.path)
-            say("Added to Favorites")
+            say(str(R.string.ambr_added_to_favorites))
         }
     }
 
@@ -266,22 +272,22 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
             .onSuccess { renamed ->
                 movePathInFavorites(video.path, renamed.path)
                 replaceInFeed(video) { renamed }
-                say("Renamed to “${renamed.title}”")
+                say(str(R.string.ambr_renamed_to_x, renamed.title))
             }
-            .onFailure { say(it.message ?: "Failed to rename") }
+            .onFailure { say(it.message ?: str(R.string.ambr_failed_to_rename)) }
         rescan()
     }
 
     fun move(video: Video, dest: VideoFolder) = viewModelScope.launch {
-        _busy.value = Busy("Moving to ${dest.name}…")
+        _busy.value = Busy(str(R.string.ambr_moving_to_x, dest.name))
         repo.move(video, File(dest.path))
             .onSuccess { moved ->
                 movePathInFavorites(video.path, moved.path)
                 val virtualFeed = _feed.value?.folder?.isVirtual == true
                 replaceInFeed(video) { if (virtualFeed) moved else null }
-                say("Moved to ${dest.name}")
+                say(str(R.string.ambr_moved_to_x, dest.name))
             }
-            .onFailure { say(it.message ?: "Failed to move") }
+            .onFailure { say(it.message ?: str(R.string.ambr_failed_to_move)) }
         _busy.value = null
         rescan()
     }
@@ -291,9 +297,9 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
             .onSuccess {
                 movePathInFavorites(video.path, null)
                 replaceInFeed(video) { null }
-                say("Deleted")
+                say(str(R.string.ambr_deleted))
             }
-            .onFailure { say(it.message ?: "Failed to delete") }
+            .onFailure { say(it.message ?: str(R.string.ambr_failed_to_delete)) }
         rescan()
     }
 
@@ -301,8 +307,8 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
 
     fun createFolder(name: String, hidden: Boolean, noMedia: Boolean) = viewModelScope.launch {
         repo.createFolder(name, hidden, noMedia)
-            .onSuccess { say(if (hidden) "Hidden folder “${it.name}” created" else "Folder “${it.name}” created") }
-            .onFailure { say(it.message ?: "Couldn't create folder") }
+            .onSuccess { say(if (hidden) str(R.string.ambr_hidden_folder_x_created, it.name) else str(R.string.ambr_folder_x_created, it.name)) }
+            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_create_folder)) }
         rescan()
     }
 
@@ -312,9 +318,9 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 folder.videos.forEach { v -> movePathInFavorites(v.path, File(dir, v.name).absolutePath) }
                 if (prefs.lastFolder == folder.path) prefs.lastFolder = dir.absolutePath
                 movePathInGalleryPrefs(folder.path, dir.absolutePath)
-                say("Renamed to “${dir.name}”")
+                say(str(R.string.ambr_renamed_to_x, dir.name))
             }
-            .onFailure { say(it.message ?: "Couldn't rename folder") }
+            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_rename_folder)) }
         rescan()
     }
 
@@ -322,9 +328,9 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
         repo.deleteFolder(folder)
             .onSuccess {
                 setFavorites(_favorites.value - folder.videos.map { it.path }.toSet())
-                say("Deleted “${folder.name}”")
+                say(str(R.string.ambr_deleted_x, folder.name))
             }
-            .onFailure { say(it.message ?: "Couldn't delete folder") }
+            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_delete_folder)) }
         rescan()
     }
 
@@ -336,9 +342,9 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
         val now = _folders.value.firstOrNull { it.path == folder.path }
         say(
             when {
-                enabled -> "Hidden from other apps. Some galleries need a minute to catch up."
-                now?.noMedia == true -> "Still hidden: a folder above it hides everything inside"
-                else -> "Visible to other apps again"
+                enabled -> str(R.string.ambr_hidden_from_other_apps_some)
+                now?.noMedia == true -> str(R.string.ambr_still_hidden_a_folder_above)
+                else -> str(R.string.ambr_visible_to_other_apps_again)
             },
         )
     }
@@ -347,7 +353,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
         _hideFromGalleries.value = on
         prefs.hideFromGalleries = on
         rescan()
-        say(if (on) "Folders hidden from galleries (except ones you chose to show)" else "Folders visible in galleries (except ones you chose to hide)")
+        say(if (on) str(R.string.ambr_folders_hidden_from_galleries_except) else str(R.string.ambr_folders_visible_in_galleries_except))
     }
 
     private fun movePathInGalleryPrefs(old: String, new: String) {
@@ -370,18 +376,18 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     fun startCram(paths: List<String>) {
         if (paths.isEmpty()) return
         Cram.enqueue(getApplication(), paths, _cramHeight.value, _cramCharging.value)
-        say("Cramming ${pluralVideos(paths.size)} to ${_cramHeight.value}p in the background")
+        say(str(R.string.ambr_cramming_x_to_x_p, pluralVideos(paths.size), _cramHeight.value))
     }
 
     /** Cram everything worth cramming in one folder (or a single video). */
     fun cramQuick(videos: List<Video>) = viewModelScope.launch {
         val picks = Cram.candidates(videos, _cramHeight.value) { _, _ -> }
-        if (picks.isEmpty()) say("Already small. Nothing to cram at ${_cramHeight.value}p")
+        if (picks.isEmpty()) say(str(R.string.ambr_already_small_nothing_to_cram, _cramHeight.value))
         else startCram(picks.map { it.video.path })
     }
 
     fun setHidden(folder: VideoFolder, hidden: Boolean) = viewModelScope.launch {
-        val verb = if (hidden) "Hiding" else "Unhiding"
+        val verb = if (hidden) str(R.string.ambr_hiding) else str(R.string.ambr_unhiding)
         _busy.value = Busy("$verb “${folder.name}”…", 0f)
         repo.setHidden(folder, hidden) { done, total ->
             _busy.value = Busy("$verb “${folder.name}”… $done/$total", if (total == 0) 1f else done / total.toFloat())
@@ -389,9 +395,9 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
             .onSuccess { dir ->
                 folder.videos.forEach { v -> movePathInFavorites(v.path, File(dir, v.name).absolutePath) }
                 if (prefs.lastFolder == folder.path) prefs.lastFolder = dir.absolutePath
-                say(if (hidden) "“${folder.name}” is now hidden" else "“${folder.name}” is visible again")
+                say(if (hidden) str(R.string.ambr_x_is_now_hidden, folder.name) else str(R.string.ambr_x_is_visible_again, folder.name))
             }
-            .onFailure { say(it.message ?: "Couldn't move the folder") }
+            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_move_the_folder)) }
         _busy.value = null
         rescan()
     }
@@ -438,7 +444,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
         pin.clear()
         setBiometric(false)
         _unlocked.value = false
-        say("Hidden folders erased and PIN removed")
+        say(str(R.string.ambr_hidden_folders_erased_and_pin))
         rescan()
     }
 
@@ -480,11 +486,11 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteVideos(videos: List<Video>) = viewModelScope.launch {
-        _busy.value = Busy("Deleting ${videos.size} copies…")
+        _busy.value = Busy(str(R.string.ambr_deleting_x_copies, videos.size))
         var ok = 0
         videos.forEach { v -> repo.delete(v).onSuccess { ok++; movePathInFavorites(v.path, null) } }
         _busy.value = null
-        say("Deleted $ok ${if (ok == 1) "copy" else "copies"}")
+        say(str(R.string.ambr_deleted_x_x, plural(R.plurals.copies, ok)))
         _dups.update { s ->
             val gone = videos.map { it.path }.toSet()
             s.copy(groups = s.groups?.map { g -> g.filter { it.path !in gone } }?.filter { it.size > 1 })
@@ -500,15 +506,15 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     fun setAutoLock(v: Int) { _autoLock.value = v; prefs.autoLockSeconds = v }
 
     fun loadYtDlpVersion() = viewModelScope.launch {
-        _ytdlpVersion.value = YtDlp.version(getApplication()) ?: "Bundled version (tap Update for the newest)"
+        _ytdlpVersion.value = YtDlp.version(getApplication()) ?: str(R.string.ambr_bundled_version_tap_update_for)
     }
 
     fun updateYtDlp() = viewModelScope.launch {
         _ytdlpUpdating.value = true
         runCatching { YtDlp.update(getApplication()) }
-            .onSuccess { updated -> say(if (updated) "yt-dlp updated" else "yt-dlp is already up to date") }
-            .onFailure { say("Update failed: ${it.message?.take(80)}") }
-        _ytdlpVersion.value = YtDlp.version(getApplication()) ?: "Bundled version"
+            .onSuccess { updated -> say(if (updated) str(R.string.ambr_yt_dlp_updated) else str(R.string.ambr_yt_dlp_is_already_up)) }
+            .onFailure { say(str(R.string.ambr_update_failed_x, it.message?.take(80))) }
+        _ytdlpVersion.value = YtDlp.version(getApplication()) ?: str(R.string.ambr_bundled_version)
         _ytdlpUpdating.value = false
     }
 

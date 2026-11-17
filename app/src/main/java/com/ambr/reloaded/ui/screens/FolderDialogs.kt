@@ -1,5 +1,9 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,13 +81,13 @@ fun CreateFolderDialog(onDismiss: () -> Unit, onCreate: (name: String, hidden: B
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.CreateNewFolder, null) },
-        title = { Text("New folder") },
+        title = { Text(str(R.string.folder_new_folder)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Folder name") },
+                    label = { Text(str(R.string.folder_folder_name)) },
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -92,19 +96,19 @@ fun CreateFolderDialog(onDismiss: () -> Unit, onCreate: (name: String, hidden: B
                 )
                 Spacer(Modifier.height(12.dp))
                 SwitchRow(
-                    Icons.Rounded.Lock, "Hidden folder",
-                    "Only visible after entering your PIN",
+                    Icons.Rounded.Lock, str(R.string.folder_hidden_folder),
+                    str(R.string.folder_only_visible_after_entering_your),
                     hidden,
                 ) { hidden = it }
                 SwitchRow(
-                    Icons.Rounded.VisibilityOff, "Hide from galleries",
-                    if (hidden) "Hidden folders are always invisible to other apps" else "Adds a .nomedia file",
+                    Icons.Rounded.VisibilityOff, str(R.string.folder_hide_from_galleries),
+                    if (hidden) str(R.string.folder_hidden_folders_are_always_invisible) else str(R.string.folder_adds_a_nomedia_file),
                     noMedia || hidden, enabled = !hidden,
                 ) { noMedia = it }
             }
         },
-        confirmButton = { TextButton(onClick = { onCreate(name, hidden, noMedia || hidden) }, enabled = valid) { Text("Create") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onCreate(name, hidden, noMedia || hidden) }, enabled = valid) { Text(str(R.string.folder_create)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.pin_pad_cancel)) } },
     )
 }
 
@@ -165,10 +169,10 @@ fun FolderOptionsSheet(
             }
             Spacer(Modifier.height(8.dp))
             SwitchRow(
-                Icons.Rounded.VisibilityOff, "Hide from galleries",
+                Icons.Rounded.VisibilityOff, str(R.string.folder_hide_from_galleries),
                 when {
-                    folder.isHidden -> "Hidden folders are always invisible to other apps"
-                    else -> "Overrides the default in Settings for this folder"
+                    folder.isHidden -> str(R.string.folder_hidden_folders_are_always_invisible)
+                    else -> str(R.string.folder_overrides_the_default_in_settings)
                 },
                 folder.hiddenFromGalleries,
                 enabled = !folder.isHidden,
@@ -176,9 +180,9 @@ fun FolderOptionsSheet(
             )
             if (!folder.isRoot) {
                 SwitchRow(
-                    Icons.Rounded.Lock, "Hidden folder",
-                    if (folder.isHidden) "Turn off to move it back to Internal storage › AMBR"
-                    else "Moves it into AMBR's private, PIN-locked space",
+                    Icons.Rounded.Lock, str(R.string.folder_hidden_folder),
+                    if (folder.isHidden) str(R.string.folder_turn_off_to_move_it)
+                    else str(R.string.folder_moves_it_into_ambr_s),
                     folder.isHidden,
                     onChange = onHidden,
                 )
@@ -187,19 +191,19 @@ fun FolderOptionsSheet(
                     val big = 28.dp
                     val small = 8.dp
                     Tile(
-                        "Rename", Icons.Rounded.DriveFileRenameOutline, onRename,
+                        str(R.string.rename), Icons.Rounded.DriveFileRenameOutline, onRename,
                         RoundedCornerShape(topStart = big, bottomStart = big, topEnd = small, bottomEnd = small),
                         Modifier.weight(1f),
                         MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                     Tile(
-                        "Cram", Icons.Rounded.Compress, onCram,
+                        str(R.string.folder_cram), Icons.Rounded.Compress, onCram,
                         RoundedCornerShape(small),
                         Modifier.weight(1f),
                         MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                     Tile(
-                        "Delete", Icons.Rounded.DeleteOutline, onDelete,
+                        str(R.string.delete), Icons.Rounded.DeleteOutline, onDelete,
                         RoundedCornerShape(topStart = small, bottomStart = small, topEnd = big, bottomEnd = big),
                         Modifier.weight(1f),
                         MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer,
@@ -233,16 +237,16 @@ fun RenameFolderDialog(folder: VideoFolder, onDismiss: () -> Unit, onConfirm: (S
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.DriveFileRenameOutline, null) },
-        title = { Text("Rename folder") },
+        title = { Text(str(R.string.folder_rename_folder)) },
         text = {
             OutlinedTextField(
                 value = value, onValueChange = { value = it }, singleLine = true,
-                label = { Text("Folder name") }, shape = RoundedCornerShape(16.dp),
+                label = { Text(str(R.string.folder_folder_name)) }, shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.focusRequester(focus),
             )
         },
-        confirmButton = { TextButton(onClick = { onConfirm(value.text) }, enabled = value.text.isNotBlank()) { Text("Rename") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onConfirm(value.text) }, enabled = value.text.isNotBlank()) { Text(str(R.string.rename)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.pin_pad_cancel)) } },
     )
 }
 
@@ -251,19 +255,19 @@ fun DeleteFolderDialog(folder: VideoFolder, onDismiss: () -> Unit, onConfirm: ()
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-        title = { Text("Delete “${folder.name}”?") },
+        title = { Text(str(R.string.folder_delete_x, folder.name)) },
         text = {
             Text(
-                if (folder.count == 0) "The empty folder will be removed."
-                else "This permanently deletes the folder and all ${pluralVideos(folder.count)} in it (${formatBytes(folder.totalBytes)}).",
+                if (folder.count == 0) str(R.string.folder_the_empty_folder_will_be)
+                else str(R.string.folder_this_permanently_deletes_the_folder, pluralVideos(folder.count), formatBytes(folder.totalBytes)),
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-                Text("Delete")
+                Text(str(R.string.delete))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.pin_pad_cancel)) } },
     )
 }
 
@@ -273,16 +277,16 @@ fun HideWarningDialog(folder: VideoFolder, onDismiss: () -> Unit, onConfirm: () 
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.Warning, null, tint = MaterialTheme.colorScheme.tertiary) },
-        title = { Text("Hide “${folder.name}”?") },
+        title = { Text(str(R.string.folder_hide_x, folder.name)) },
         text = {
             Text(
-                "Its videos move into AMBR's private storage, where no other app, gallery or file manager can see them, " +
-                    "and only your PIN reveals them.\n\nHeads up: uninstalling AMBR or clearing its storage deletes hidden videos. " +
-                    "Unhide anything you want to keep first.",
+                str(R.string.folder_its_videos_move_into_ambr) +
+                    str(R.string.folder_and_only_your_pin_reveals) +
+                    str(R.string.folder_unhide_anything_you_want_to),
             )
         },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Hide it") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(str(R.string.folder_hide_it)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(str(R.string.pin_pad_cancel)) } },
     )
 }
 

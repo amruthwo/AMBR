@@ -1,5 +1,9 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -112,8 +116,8 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text("Cram Session") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                title = { Text(str(R.string.cram_cram_session)) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.cram_back)) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -135,7 +139,7 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                         Icon(Icons.Rounded.Compress, null)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Cram ${pluralVideos(chosen.size)} · save ~${formatBytes(chosen.sumOf { it.savings })}",
+                            str(R.string.cram_cram_x_save_x, pluralVideos(chosen.size), formatBytes(chosen.sumOf { it.savings })),
                             style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
                         )
                     }
@@ -157,13 +161,13 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                             }
                             Spacer(Modifier.width(12.dp))
                             Text(
-                                "Shrinks big videos using your phone's video chip. An original is only deleted after its smaller copy is checked.",
+                                str(R.string.cram_shrinks_big_videos_using_your),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Spacer(Modifier.height(14.dp))
-                        Text("Shrink to", style = MaterialTheme.typography.labelLarge)
+                        Text(str(R.string.cram_shrink_to), style = MaterialTheme.typography.labelLarge)
                         Spacer(Modifier.height(6.dp))
                         val opts = listOf(480 to "480p", 720 to "720p", 1080 to "1080p")
                         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -177,8 +181,8 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                         }
                         ListItem(
                             leadingContent = { Icon(Icons.Rounded.BatteryChargingFull, null) },
-                            headlineContent = { Text("Only while charging") },
-                            supportingContent = { Text("Big batches can take a while") },
+                            headlineContent = { Text(str(R.string.cram_only_while_charging)) },
+                            supportingContent = { Text(str(R.string.cram_big_batches_can_take_a)) },
                             trailingContent = { Switch(checked = charging, onCheckedChange = null) },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                             modifier = Modifier.toggleable(charging, role = Role.Switch) { vm.setCramCharging(it) },
@@ -198,11 +202,11 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                             val fraction = work?.progress?.getFloat("fraction", 0f) ?: 0f
                             Text(
                                 when {
-                                    running && total > 0 -> "Cramming $index of $total"
-                                    running -> "Starting…"
-                                    waiting && charging -> "Waiting for the charger"
-                                    queue.pending.isNotEmpty() -> "Paused · ${pluralVideos(queue.pending.size)} left"
-                                    else -> "Done"
+                                    running && total > 0 -> str(R.string.cram_cramming_x_of_x, index, total)
+                                    running -> str(R.string.cram_starting)
+                                    waiting && charging -> str(R.string.cram_waiting_for_the_charger)
+                                    queue.pending.isNotEmpty() -> str(R.string.cram_paused_x_left, pluralVideos(queue.pending.size))
+                                    else -> str(R.string.cram_done)
                                 },
                                 style = MaterialTheme.typography.titleLarge,
                             )
@@ -213,24 +217,24 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                             }
                             Spacer(Modifier.height(10.dp))
                             Text(
-                                "${queue.done} shrunk · saved ${formatBytes(queue.saved)}" +
-                                    (if (queue.kept > 0) " · ${queue.kept} already small (kept)" else "") +
-                                    if (queue.failed > 0) " · ${queue.failed} couldn't convert (kept)" else "",
+                                str(R.string.cram_x_shrunk_saved_x, queue.done, formatBytes(queue.saved)) +
+                                    (if (queue.kept > 0) str(R.string.cram_x_already_small_kept, queue.kept) else "") +
+                                    if (queue.failed > 0) str(R.string.cram_x_couldn_t_convert_kept, queue.failed) else "",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                             Spacer(Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (running || waiting) {
                                     FilledTonalButton(onClick = { Cram.pause(context) }) {
-                                        Icon(Icons.Rounded.Pause, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Pause")
+                                        Icon(Icons.Rounded.Pause, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(str(R.string.bits_pause))
                                     }
                                 } else if (queue.pending.isNotEmpty()) {
                                     FilledTonalButton(onClick = { Cram.start(context, charging) }) {
-                                        Icon(Icons.Rounded.PlayArrow, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Resume")
+                                        Icon(Icons.Rounded.PlayArrow, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(str(R.string.cram_resume))
                                     }
                                 }
                                 if (!running) TextButton(onClick = { Cram.clear(context); vm.refresh() }) {
-                                    Text(if (queue.pending.isEmpty()) "Dismiss" else "Clear queue")
+                                    Text(if (queue.pending.isEmpty()) str(R.string.cram_dismiss) else str(R.string.cram_clear_queue))
                                 }
                             }
                         }
@@ -244,7 +248,7 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                     Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         LoadingIndicator(Modifier.size(64.dp))
                         Spacer(Modifier.height(12.dp))
-                        Text("Measuring your videos…", style = MaterialTheme.typography.titleMedium)
+                        Text(str(R.string.cram_measuring_your_videos), style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(10.dp))
                         LinearWavyProgressIndicator(progress = { scanning ?: 0f }, modifier = Modifier.fillMaxWidth(0.7f))
                     }
@@ -255,12 +259,12 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                         modifier = Modifier.fillMaxWidth().height(ButtonDefaults.MediumContainerHeight),
                     ) {
                         Icon(Icons.Rounded.Search, null); Spacer(Modifier.width(8.dp))
-                        Text("Find videos to cram", style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight))
+                        Text(str(R.string.cram_find_videos_to_cram), style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight))
                     }
                 }
                 candidates!!.isEmpty() -> item {
                     Text(
-                        "Everything is already ${height}p or smaller. Nothing to cram.",
+                        str(R.string.cram_everything_is_already_x_p, height),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(16.dp),
@@ -271,13 +275,13 @@ fun CramScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () -> Uni
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "${pluralVideos(list.size)} could shrink · ~${formatBytes(list.sumOf { it.savings })}",
+                                str(R.string.cram_x_could_shrink_x, pluralVideos(list.size), formatBytes(list.sumOf { it.savings })),
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.weight(1f),
                             )
                             TextButton(onClick = {
                                 picked = if (picked.size == list.size) emptySet() else list.map { it.video.path }.toSet()
-                            }) { Text(if (picked.size == list.size) "None" else "All") }
+                            }) { Text(if (picked.size == list.size) str(R.string.cram_none) else str(R.string.cram_all)) }
                         }
                     }
                     items(list, key = { it.video.path }) { c ->

@@ -1,5 +1,7 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,14 +51,14 @@ fun PermissionScreen(onGrant: () -> Unit) {
             Image(painterResource(R.drawable.ambr_logo), null, Modifier.fillMaxWidth(0.55f))
             Spacer(Modifier.height(32.dp))
             Text(
-                "Feed the brain",
+                str(R.string.permission_feed_the_brain),
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "AMBR plays the videos in Internal storage › AMBR. To rename, move and organise them " +
-                    "it needs All files access. Nothing ever leaves your phone.",
+                str(R.string.permission_ambr_plays_the_videos_in) +
+                    str(R.string.permission_it_needs_all_files_access),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -69,7 +71,7 @@ fun PermissionScreen(onGrant: () -> Unit) {
             ) {
                 Icon(Icons.Rounded.FolderOpen, null, Modifier.size(ButtonDefaults.iconSizeFor(ButtonDefaults.LargeContainerHeight)))
                 Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(ButtonDefaults.LargeContainerHeight)))
-                Text("Grant access", style = ButtonDefaults.textStyleFor(ButtonDefaults.LargeContainerHeight))
+                Text(str(R.string.permission_grant_access), style = ButtonDefaults.textStyleFor(ButtonDefaults.LargeContainerHeight))
             }
         }
     }

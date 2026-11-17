@@ -1,5 +1,9 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import android.os.Environment
 import android.os.StatFs
 import androidx.activity.compose.BackHandler
@@ -80,8 +84,8 @@ fun InfoScreen(vm: AmbrViewModel, onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Brain scan") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                title = { Text(str(R.string.info_brain_scan)) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.cram_back)) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -94,23 +98,23 @@ fun InfoScreen(vm: AmbrViewModel, onBack: () -> Unit) {
             // Hero numbers.
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatTile("Videos", "${videos.size}", "in ${real.size} folders", Modifier.weight(1f))
-                    StatTile("Space used", formatBytes(totalBytes), "on this phone", Modifier.weight(1f))
+                    StatTile(str(R.string.info_videos), "${videos.size}", str(R.string.info_in_x_folders, real.size), Modifier.weight(1f))
+                    StatTile(str(R.string.info_space_used), formatBytes(totalBytes), str(R.string.info_on_this_phone), Modifier.weight(1f))
                 }
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     StatTile(
-                        "Watch time",
+                        str(R.string.info_watch_time),
                         if (stats.done) formatHours(totalMs) else "…",
-                        if (stats.done) "to watch everything once" else "measuring",
+                        if (stats.done) str(R.string.info_to_watch_everything_once) else "measuring",
                         Modifier.weight(1f),
                         progress = if (stats.done) null else stats.progress,
                     )
                     StatTile(
-                        "Average",
+                        str(R.string.info_average),
                         if (videos.isEmpty()) "–" else formatBytes(totalBytes / videos.size),
-                        if (stats.done && videos.isNotEmpty()) "${formatClock(totalMs / videos.size)} per video" else "per video",
+                        if (stats.done && videos.isNotEmpty()) str(R.string.info_x_per_video, formatClock(totalMs / videos.size)) else str(R.string.info_per_video),
                         Modifier.weight(1f),
                     )
                 }
@@ -121,7 +125,7 @@ fun InfoScreen(vm: AmbrViewModel, onBack: () -> Unit) {
                         Icon(Icons.Rounded.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Hidden folders aren't counted while locked.",
+                            str(R.string.info_hidden_folders_aren_t_counted),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -130,11 +134,11 @@ fun InfoScreen(vm: AmbrViewModel, onBack: () -> Unit) {
             }
 
             // Space by folder: sorted bars, one hue, values labelled directly.
-            item { SectionCard("Space by folder") { FolderBars(real, grow.value) } }
+            item { SectionCard(str(R.string.info_space_by_folder)) { FolderBars(real, grow.value) } }
 
             // Phone storage: one segmented bar.
             item {
-                SectionCard("Phone storage") {
+                SectionCard(str(R.string.info_phone_storage)) {
                     StorageBar(totalBytes, storage.first, storage.second, grow.value)
                 }
             }
@@ -143,7 +147,7 @@ fun InfoScreen(vm: AmbrViewModel, onBack: () -> Unit) {
             val biggest = videos.sortedByDescending { it.sizeBytes }.take(5)
             if (biggest.isNotEmpty()) {
                 item {
-                    SectionCard("Biggest videos") {
+                    SectionCard(str(R.string.info_biggest_videos)) {
                         biggest.forEach { v ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 6.dp)) {
                                 ThumbTile(v, Modifier.size(width = 40.dp, height = 52.dp), corner = 10.dp)
@@ -206,13 +210,13 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 private fun FolderBars(folders: List<VideoFolder>, grow: Float) {
     val sorted = folders.filter { it.totalBytes > 0 }.sortedByDescending { it.totalBytes }
     if (sorted.isEmpty()) {
-        Text("Nothing here yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(str(R.string.info_nothing_here_yet), color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
     val rows = if (sorted.size > 7) {
         val rest = sorted.drop(6)
         sorted.take(6).map { Triple(it.name, it.totalBytes, it.count) } +
-            Triple("Other (${rest.size} folders)", rest.sumOf { it.totalBytes }, rest.sumOf { it.count })
+            Triple(str(R.string.info_other_x_folders, rest.size), rest.sumOf { it.totalBytes }, rest.sumOf { it.count })
     } else sorted.map { Triple(it.name, it.totalBytes, it.count) }
     val max = rows.maxOf { it.second }.toFloat()
     val bar = MaterialTheme.colorScheme.primary
@@ -262,8 +266,8 @@ private fun StorageBar(ambr: Long, total: Long, free: Long, grow: Float) {
     }
     Spacer(Modifier.height(12.dp))
     Legend(ambrColor, "AMBR", formatBytes(ambr), "%.1f%%".format(ambr * 100.0 / total))
-    Legend(otherColor, "Everything else", formatBytes(other), null)
-    Legend(freeColor, "Free", formatBytes(free), null)
+    Legend(otherColor, str(R.string.info_everything_else), formatBytes(other), null)
+    Legend(freeColor, str(R.string.info_free), formatBytes(free), null)
 }
 
 @Composable

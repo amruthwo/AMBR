@@ -1,5 +1,11 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.plural
+
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,10 +83,10 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Duplicates") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                title = { Text(str(R.string.duplicates_duplicates)) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.cram_back)) } },
                 actions = {
-                    if (!state.running) IconButton(onClick = vm::findDuplicates) { Icon(Icons.Rounded.Refresh, "Scan again") }
+                    if (!state.running) IconButton(onClick = vm::findDuplicates) { Icon(Icons.Rounded.Refresh, str(R.string.duplicates_scan_again)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
@@ -103,7 +109,7 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
                         Icon(Icons.Rounded.DeleteSweep, null)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Delete ${chosen.size} ${if (chosen.size == 1) "copy" else "copies"} · free ${formatBytes(chosen.sumOf { it.sizeBytes })}",
+                            str(R.string.duplicates_delete_x_x_free_x, plural(R.plurals.copies, chosen.size), formatBytes(chosen.sumOf { it.sizeBytes })),
                             style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
                         )
                     }
@@ -119,12 +125,12 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
             ) {
                 LoadingIndicator(Modifier.size(72.dp))
                 Spacer(Modifier.height(20.dp))
-                Text("Comparing videos…", style = MaterialTheme.typography.titleLarge)
+                Text(str(R.string.duplicates_comparing_videos), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(16.dp))
                 LinearWavyProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth(0.7f))
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "Matching sizes first, then fingerprints, so nothing is flagged unless it's byte-for-byte identical.",
+                    str(R.string.duplicates_matching_sizes_first_then_fingerprints),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -137,8 +143,8 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
             ) {
                 Icon(Icons.Rounded.CheckCircle, null, Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(16.dp))
-                Text("No duplicates", style = MaterialTheme.typography.headlineMedium)
-                Text("Your brain is tidy.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(str(R.string.duplicates_no_duplicates), style = MaterialTheme.typography.headlineMedium)
+                Text(str(R.string.duplicates_your_brain_is_tidy), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             else -> LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 16.dp),
@@ -147,8 +153,8 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
                 val groups = state.groups.orEmpty()
                 item {
                     Text(
-                        "${groups.size} ${if (groups.size == 1) "set" else "sets"} of identical videos. " +
-                            "The oldest copy of each is kept unless you change the ticks.",
+                        str(R.string.duplicates_x_x_of_identical_videos, plural(R.plurals.sets, groups.size)) +
+                            str(R.string.duplicates_the_oldest_copy_of_each),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 4.dp),
@@ -161,7 +167,7 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
                     ) {
                         Column(Modifier.padding(vertical = 10.dp)) {
                             Text(
-                                "${group.size} copies · ${formatBytes(group.first().sizeBytes)} each",
+                                str(R.string.duplicates_x_copies_x_each, group.size, formatBytes(group.first().sizeBytes)),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
@@ -186,7 +192,7 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
                                         )
                                     }
                                     if (!checked) {
-                                        Text("Keep", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
+                                        Text(str(R.string.duplicates_keep), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.tertiary)
                                         Spacer(Modifier.width(8.dp))
                                     }
                                 }
@@ -203,20 +209,20 @@ fun DuplicatesScreen(vm: AmbrViewModel, onBack: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirm = false },
             icon = { Icon(Icons.Rounded.DeleteSweep, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete ${chosen.size} ${if (chosen.size == 1) "copy" else "copies"}?") },
+            title = { Text(str(R.string.duplicates_delete_x_x, plural(R.plurals.copies, chosen.size))) },
             text = {
                 Text(
-                    if (keepsNone) "Careful: at least one set has every copy ticked, so that video will be gone completely."
-                    else "One copy of every video stays. This frees ${formatBytes(chosen.sumOf { it.sizeBytes })}.",
+                    if (keepsNone) str(R.string.duplicates_careful_at_least_one_set)
+                    else str(R.string.duplicates_one_copy_of_every_video, formatBytes(chosen.sumOf { it.sizeBytes })),
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = { confirm = false; vm.deleteVideos(chosen) },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Delete") }
+                ) { Text(str(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirm = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirm = false }) { Text(str(R.string.pin_pad_cancel)) } },
         )
     }
 }

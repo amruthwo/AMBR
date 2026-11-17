@@ -1,5 +1,7 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -63,7 +65,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             )
             Spacer(Modifier.height(20.dp))
             Text(
-                "Airplane Mode Brain Rot",
+                str(R.string.splash_airplane_mode_brain_rot),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.graphicsLayer { alpha = textAlpha.value },

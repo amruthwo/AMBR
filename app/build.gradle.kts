@@ -36,6 +36,8 @@ android {
 
     buildTypes {
         debug {
+            // Pseudo-locales (en-XA accented, ar-XB right-to-left) catch untranslated text.
+            isPseudoLocalesEnabled = true
             ambrSigning?.let { signingConfig = it }
             applicationIdSuffix = ".debug"
         }
@@ -52,6 +54,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures { compose = true }
+
+    // Lists every translated language (values-xx folders) in Android 13+'s per-app language setting.
+    androidResources { generateLocaleConfig = true }
 
     // yt-dlp ships Python + FFmpeg as native libs that must be extracted on install.
     packaging { jniLibs.useLegacyPackaging = true }

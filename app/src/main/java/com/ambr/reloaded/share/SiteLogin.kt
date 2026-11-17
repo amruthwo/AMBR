@@ -1,5 +1,9 @@
 package com.ambr.reloaded.share
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -45,9 +49,9 @@ enum class Site(
     /** The cookie that only exists while you're actually logged in. */
     val authCookie: String,
 ) {
-    Reddit("Reddit", "https://www.reddit.com/login/", listOf("https://www.reddit.com", "https://old.reddit.com"), "reddit_session"),
-    Instagram("Instagram", "https://www.instagram.com/accounts/login/", listOf("https://www.instagram.com"), "sessionid"),
-    X("X (Twitter)", "https://x.com/i/flow/login", listOf("https://x.com", "https://twitter.com"), "auth_token"),
+    Reddit(str(R.string.site_login_reddit), "https://www.reddit.com/login/", listOf("https://www.reddit.com", "https://old.reddit.com"), "reddit_session"),
+    Instagram(str(R.string.site_login_instagram), "https://www.instagram.com/accounts/login/", listOf("https://www.instagram.com"), "sessionid"),
+    X(str(R.string.site_login_x_twitter), "https://x.com/i/flow/login", listOf("https://x.com", "https://twitter.com"), "auth_token"),
     ;
 
     companion object {
@@ -87,14 +91,14 @@ object SiteCookies {
     fun export(context: Context) {
         CookieManager.getInstance().flush()
         val farFuture = System.currentTimeMillis() / 1000 + 365L * 24 * 3600
-        val lines = mutableListOf("# Netscape HTTP Cookie File", "# Written by AMBR from your in-app sign-ins.")
+        val lines = mutableListOf(str(R.string.site_login_netscape_http_cookie_file), str(R.string.site_login_written_by_ambr_from_your))
         Site.entries.filter { isSignedIn(context, it) }.forEach { site ->
             val seen = mutableSetOf<String>()
             site.cookieUrls.forEach { url ->
                 val domain = cookieDomain(url)
                 cookiePairs(url).forEach { (name, value) ->
                     if (seen.add("$domain|$name")) {
-                        lines += listOf(domain, "TRUE", "/", "TRUE", farFuture.toString(), name, value).joinToString("\t")
+                        lines += listOf(domain, str(R.string.site_login_true), "/", str(R.string.site_login_true), farFuture.toString(), name, value).joinToString("\t")
                     }
                 }
             }
@@ -109,14 +113,14 @@ object SiteCookies {
      */
     fun signOut(context: Context, site: Site) {
         val cm = CookieManager.getInstance()
-        val gone = "Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/; Secure"
+        val gone = str(R.string.site_login_expires_thu_01_jan_1970)
         site.cookieUrls.forEach { url ->
             val host = android.net.Uri.parse(url).host.orEmpty()
             val bare = host.removePrefix("www.").removePrefix("old.")
             cookiePairs(url).forEach { (name, _) ->
                 cm.setCookie(url, "$name=; $gone")
-                cm.setCookie(url, "$name=; $gone; Domain=$host")
-                cm.setCookie(url, "$name=; $gone; Domain=.$bare")
+                cm.setCookie(url, str(R.string.site_login_x_x_domain_x, name, gone, host))
+                cm.setCookie(url, str(R.string.site_login_x_x_domain_x_2, name, gone, bare))
             }
         }
         cm.flush()
@@ -125,8 +129,8 @@ object SiteCookies {
 
     /** Does this yt-dlp error mean "you need to log in"? */
     fun isAuthError(message: String) = listOf(
-        "authentication is required", "--cookies", "login required", "log in", "sign in to confirm", "private",
-        "requested content is not available", "rate-limit reached",
+        str(R.string.site_login_authentication_is_required), "--cookies", str(R.string.site_login_login_required), str(R.string.site_login_log_in), str(R.string.site_login_sign_in_to_confirm), "private",
+        str(R.string.site_login_requested_content_is_not_available), str(R.string.site_login_rate_limit_reached),
     ).any { message.contains(it, ignoreCase = true) }
 }
 
@@ -154,9 +158,9 @@ class SiteLoginActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
                     Column(Modifier.statusBarsPadding().navigationBarsPadding()) {
                         TopAppBar(
-                            title = { Text("Sign in to ${site.label}") },
-                            navigationIcon = { IconButton(onClick = { finish() }) { Icon(Icons.Rounded.Close, "Cancel") } },
-                            actions = { Button(onClick = ::done) { Text("Done") } },
+                            title = { Text(str(R.string.share_sign_in_to_x, site.label)) },
+                            navigationIcon = { IconButton(onClick = { finish() }) { Icon(Icons.Rounded.Close, str(R.string.pin_pad_cancel)) } },
+                            actions = { Button(onClick = ::done) { Text(str(R.string.cram_done)) } },
                         )
                         if (progress < 1f) LinearWavyProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
                         AndroidView(

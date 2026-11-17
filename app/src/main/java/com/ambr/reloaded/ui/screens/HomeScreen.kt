@@ -1,5 +1,7 @@
 package com.ambr.reloaded.ui.screens
 
+import com.ambr.reloaded.util.str
+
 import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.spring
@@ -174,7 +176,7 @@ fun HomeScreen(
                 LargeFlexibleTopAppBar(
                     title = { Text("AMBR") },
                     subtitle = {
-                        Text(if (loaded) "${pluralVideos(totalVideos)} · ${formatBytes(totalBytes)}" else "Scanning…")
+                        Text(if (loaded) "${pluralVideos(totalVideos)} · ${formatBytes(totalBytes)}" else str(R.string.home_scanning))
                     },
                     navigationIcon = {
                         Image(
@@ -185,28 +187,28 @@ fun HomeScreen(
                         )
                     },
                     actions = {
-                        IconButton(onClick = onOpenMeld) { Icon(Icons.Rounded.Hub, "Mind Meld") }
-                        IconButton(onClick = onOpenInfo) { Icon(Icons.Rounded.PieChart, "Storage & stats") }
+                        IconButton(onClick = onOpenMeld) { Icon(Icons.Rounded.Hub, str(R.string.home_mind_meld)) }
+                        IconButton(onClick = onOpenInfo) { Icon(Icons.Rounded.PieChart, str(R.string.home_storage_stats)) }
                         Box {
-                            IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, "More") }
+                            IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, str(R.string.home_more)) }
                             DropdownMenu(menu, onDismissRequest = { menu = false }, shape = RoundedCornerShape(20.dp)) {
                                 DropdownMenuItem(
-                                    text = { Text("Download from link") },
+                                    text = { Text(str(R.string.home_download_from_link)) },
                                     leadingIcon = { Icon(Icons.Rounded.Download, null) },
                                     onClick = { menu = false; onDownloadLink() },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Cram Session") },
+                                    text = { Text(str(R.string.cram_cram_session)) },
                                     leadingIcon = { Icon(Icons.Rounded.Compress, null) },
                                     onClick = { menu = false; onOpenCram() },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Find duplicates") },
+                                    text = { Text(str(R.string.home_find_duplicates)) },
                                     leadingIcon = { Icon(Icons.Rounded.ContentCopy, null) },
                                     onClick = { menu = false; onOpenDuplicates() },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Settings") },
+                                    text = { Text(str(R.string.home_settings)) },
                                     leadingIcon = { Icon(Icons.Rounded.Settings, null) },
                                     onClick = { menu = false; onOpenSettings() },
                                 )
@@ -260,7 +262,7 @@ fun HomeScreen(
                         if (lastFolder != null || allFolder != null) {
                             item(key = "label", span = { GridItemSpan(maxLineSpan) }) {
                                 Text(
-                                    "Folders",
+                                    str(R.string.home_folders),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 2.dp),
@@ -280,7 +282,7 @@ fun HomeScreen(
                         if (unlocked && folders.none { it.isHidden }) {
                             item(key = "vault-hint", span = { GridItemSpan(maxLineSpan) }) {
                                 Text(
-                                    "No hidden folders yet. Long-press a folder and turn on “Hidden folder”, or tap + to make one.",
+                                    str(R.string.home_no_hidden_folders_yet_long),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center,
@@ -300,7 +302,7 @@ fun HomeScreen(
             colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
             floatingActionButton = {
                 FloatingToolbarDefaults.VibrantFloatingActionButton(onClick = { creating = true }) {
-                    Icon(Icons.Rounded.Add, "New folder")
+                    Icon(Icons.Rounded.Add, str(R.string.folder_new_folder))
                 }
             },
             modifier = Modifier
@@ -308,9 +310,9 @@ fun HomeScreen(
                 .navigationBarsPadding()
                 .padding(bottom = 12.dp),
         ) {
-            ViewToggle(Icons.AutoMirrored.Rounded.ViewList, "List", viewMode == ViewMode.List) { vm.setViewMode(ViewMode.List) }
-            ViewToggle(Icons.Rounded.GridView, "2 per row", viewMode == ViewMode.Grid2) { vm.setViewMode(ViewMode.Grid2) }
-            ViewToggle(Icons.Rounded.Apps, "4 per row", viewMode == ViewMode.Grid4) { vm.setViewMode(ViewMode.Grid4) }
+            ViewToggle(Icons.AutoMirrored.Rounded.ViewList, str(R.string.home_list), viewMode == ViewMode.List) { vm.setViewMode(ViewMode.List) }
+            ViewToggle(Icons.Rounded.GridView, str(R.string.home_2_per_row), viewMode == ViewMode.Grid2) { vm.setViewMode(ViewMode.Grid2) }
+            ViewToggle(Icons.Rounded.Apps, str(R.string.home_4_per_row), viewMode == ViewMode.Grid4) { vm.setViewMode(ViewMode.Grid4) }
             VerticalDivider(
                 Modifier.height(28.dp).padding(horizontal = 6.dp),
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.25f),
@@ -322,7 +324,7 @@ fun HomeScreen(
                         unlocked -> vm.lock()
                         !vm.pinIsSet -> pinMode = PinMode.Create
                         vm.biometric.value && Biometrics.available(context) -> Biometrics.prompt(
-                            context, "Unlock hidden folders",
+                            context, str(R.string.pin_pad_unlock_hidden_folders),
                             onSuccess = vm::unlockTrusted,
                             onFallback = { pinMode = PinMode.Unlock },
                         )
@@ -338,7 +340,7 @@ fun HomeScreen(
                 ) { open ->
                     Icon(
                         if (open) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
-                        if (open) "Lock hidden folders" else "Show hidden folders",
+                        if (open) str(R.string.home_lock_hidden_folders) else str(R.string.home_show_hidden_folders),
                     )
                 }
             }
@@ -350,7 +352,7 @@ fun HomeScreen(
     pinMode?.let { mode ->
         PinDialog(
             mode = mode,
-            title = if (mode == PinMode.Create) "Set a PIN for hidden folders" else null,
+            title = if (mode == PinMode.Create) str(R.string.home_set_a_pin_for_hidden) else null,
             onDismiss = { pinMode = null; afterPin = null },
             check = { vm.unlock(it) },
             onSuccess = { code ->
@@ -426,8 +428,8 @@ private fun ShuffleAllCard(count: Int, onClick: () -> Unit, modifier: Modifier =
             ) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Shuffle, null) } }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text("Shuffle All", style = MaterialTheme.typography.titleMedium)
-                Text("${pluralVideos(count)} from every folder", style = MaterialTheme.typography.bodyMedium)
+                Text(str(R.string.ambr_shuffle_all), style = MaterialTheme.typography.titleMedium)
+                Text(str(R.string.home_x_from_every_folder, pluralVideos(count)), style = MaterialTheme.typography.bodyMedium)
             }
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null)
         }
@@ -462,7 +464,7 @@ private fun ContinueCard(folder: VideoFolder, onClick: () -> Unit, modifier: Mod
             )
             Row(Modifier.fillMaxSize().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Continue watching", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(str(R.string.home_continue_watching), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(4.dp))
                     Text(folder.name, style = MaterialTheme.typography.headlineMedium, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.height(4.dp))
@@ -480,7 +482,7 @@ private fun ContinueCard(folder: VideoFolder, onClick: () -> Unit, modifier: Mod
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(76.dp),
                 ) {
-                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.PlayArrow, "Play", Modifier.size(40.dp)) }
+                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.PlayArrow, str(R.string.bits_play), Modifier.size(40.dp)) }
                 }
             }
         }
@@ -619,10 +621,10 @@ private fun EmptyHome() {
         Spacer(Modifier.height(48.dp))
         Image(painterResource(R.drawable.ambr_logo), null, Modifier.fillMaxWidth(0.5f))
         Spacer(Modifier.height(24.dp))
-        Text("The brain is hungry", style = MaterialTheme.typography.headlineMedium)
+        Text(str(R.string.home_the_brain_is_hungry), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Copy videos into Internal storage › AMBR, share them to AMBR from any app, or tap + to make a folder.",
+            str(R.string.home_copy_videos_into_internal_storage),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

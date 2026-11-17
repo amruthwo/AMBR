@@ -1,5 +1,11 @@
 package com.ambr.reloaded.meld
 
+import com.ambr.reloaded.util.pluralVideos
+
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -114,7 +120,7 @@ class MeldViewModel(app: Application) : AndroidViewModel(app) {
             onReceived = { f ->
                 receivedSomething = true
                 repo.notifyMediaStore(f.absolutePath)
-                say("Received ${f.name}")
+                say(str(R.string.meld_received_x, f.name))
                 refreshMine()
             },
         )
@@ -146,14 +152,14 @@ class MeldViewModel(app: Application) : AndroidViewModel(app) {
             if (!useHotspot) MeldNet.advertise(getApplication(), myName, s.listeningPort)
             _stage.value = MeldStage.Hosting
         } catch (e: Exception) {
-            say(e.message ?: "Couldn't start Mind Meld")
+            say(e.message ?: str(R.string.meld_couldn_t_start_mind_meld))
             _stage.value = MeldStage.Idle
         }
     }
 
     private fun onPeer(peer: MeldPeer) {
         _peers.update { list -> (list.filterNot { it.name == peer.name && it.isBrowser == peer.isBrowser }) + peer }
-        if (peer.isBrowser) { say("${peer.name} connected"); return }
+        if (peer.isBrowser) { say(str(R.string.meld_x_connected, peer.name)); return }
         // Another phone joined us: connect back so we can browse theirs too.
         if (_remote.value == null && peer.token != null) viewModelScope.launch {
             val hosts = peer.urls.mapNotNull { runCatching { java.net.URL(it) }.getOrNull() }
@@ -174,15 +180,15 @@ class MeldViewModel(app: Application) : AndroidViewModel(app) {
 
     /** From a scanned QR code. */
     fun join(raw: String) = viewModelScope.launch {
-        val invite = MeldInvite.parse(raw) ?: run { say("That QR code isn't a Mind Meld invite"); return@launch }
+        val invite = MeldInvite.parse(raw) ?: run { say(str(R.string.meld_that_qr_code_isn_t)); return@launch }
         _stage.value = MeldStage.Connecting
         MeldNet.stopDiscovery(getApplication())
         var base = MeldClient.reach(invite.hosts, invite.port)
         if (base == null && invite.ssid != null) {
-            say("Joining ${invite.name}'s hotspot…")
+            say(str(R.string.meld_joining_x_s_hotspot, invite.name))
             val net = MeldNet.joinHotspot(getApplication(), invite.ssid, invite.pass.orEmpty(), invite.wpa3)
             if (net == null) {
-                say("Join Wi-Fi “${invite.ssid}” (password ${invite.pass}) in your phone's settings, then scan again")
+                say(str(R.string.meld_join_wi_fi_x_password, invite.ssid, invite.pass))
                 _stage.value = MeldStage.Joining
                 return@launch
             }
@@ -190,7 +196,7 @@ class MeldViewModel(app: Application) : AndroidViewModel(app) {
             base = MeldClient.reach(invite.hosts, invite.port)
         }
         if (base == null) {
-            say("Couldn't reach ${invite.name}. Are you on the same Wi-Fi?")
+            say(str(R.string.meld_couldn_t_reach_x_are, invite.name))
             _stage.value = MeldStage.Joining
             return@launch
         }
@@ -218,14 +224,14 @@ class MeldViewModel(app: Application) : AndroidViewModel(app) {
         _remoteName.value = name
         _stage.value = MeldStage.Connected
         loadRemote()
-        say("Mind Meld with $name 🧠⚡🧠")
+        say(str(R.string.meld_mind_meld_with_x, name))
     }
 
     fun loadRemote() = viewModelScope.launch {
         val c = _remote.value ?: return@launch
         runCatching { c.folders() }
             .onSuccess { (name, folders) -> _remoteName.value = name; _remoteFolders.value = folders }
-            .onFailure { say("Lost connection: ${it.message}") }
+            .onFailure { say(str(R.string.meld_lost_connection_x, it.message)) }
     }
 
     fun loadRemoteVideos(folderId: String) = viewModelScope.launch {
@@ -249,13 +255,13 @@ class MeldViewModel(app: Application) : AndroidViewModel(app) {
         plan.forEach { (f, v) ->
             val folderName = f.name.substringAfterLast('/').let { if (f.name == "AMBR (Root)") "" else it }
             val dest = when {
-                f.hidden && hiddenToVault -> File(repo.vault, folderName.ifEmpty { "From ${_remoteName.value}" })
+                f.hidden && hiddenToVault -> File(repo.vault, folderName.ifEmpty { str(R.string.meld_from_x, _remoteName.value) })
                 folderName.isEmpty() -> repo.root
                 else -> File(repo.root, folderName)
             }
             enqueue(Job2.Pull(Transfer(nextId++, v.name, f.name, sending = false, total = v.size), f.id, v, dest))
         }
-        if (plan.isNotEmpty()) say("Taking ${plan.size} ${if (plan.size == 1) "video" else "videos"}")
+        if (plan.isNotEmpty()) say(str(R.string.meld_taking_x_x, pluralVideos(plan.size)))
     }
 
     /** Push videos to the other phone, into folders with the same names. */
@@ -264,7 +270,7 @@ class MeldViewModel(app: Application) : AndroidViewModel(app) {
             val folderName = if (f.isRoot) "AMBR" else f.name.substringAfterLast('/')
             enqueue(Job2.Push(Transfer(nextId++, v.name, folderName, sending = true, total = v.sizeBytes), v.file))
         }
-        if (videos.isNotEmpty()) say("Sending ${videos.size} ${if (videos.size == 1) "video" else "videos"}")
+        if (videos.isNotEmpty()) say(str(R.string.meld_sending_x_x, pluralVideos(videos.size)))
     }
 
     private fun enqueue(job: Job2) {

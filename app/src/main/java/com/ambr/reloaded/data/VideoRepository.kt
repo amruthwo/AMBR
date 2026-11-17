@@ -1,5 +1,9 @@
 package com.ambr.reloaded.data
 
+import com.ambr.reloaded.util.str
+
+import com.ambr.reloaded.R
+
 import android.content.Context
 import android.media.MediaScannerConnection
 import android.os.Environment
@@ -97,8 +101,8 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             val src = video.file
             val target = File(src.parentFile, if (video.extension.isEmpty()) clean else "$clean.${video.extension}")
             if (target.absolutePath == src.absolutePath) return@runCatching video
-            require(!target.exists()) { "A video called “$clean” already exists here" }
-            check(src.renameTo(target)) { "Couldn't rename ${video.name}" }
+            require(!target.exists()) { str(R.string.video_repository_a_video_called_x_already, clean) }
+            check(src.renameTo(target)) { str(R.string.video_repository_couldn_t_rename_x, video.name) }
             notifyMediaStore(src.absolutePath, target.absolutePath)
             Video.from(target)
         }
@@ -106,7 +110,7 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
 
     suspend fun move(video: Video, destDir: File): Result<Video> = withContext(Dispatchers.IO) {
         runCatching {
-            require(destDir.isDirectory) { "That folder no longer exists" }
+            require(destDir.isDirectory) { str(R.string.video_repository_that_folder_no_longer_exists) }
             val target = moveFile(video.file, destDir)
             notifyMediaStore(video.path, target.absolutePath)
             Video.from(target)
@@ -115,7 +119,7 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
 
     suspend fun delete(video: Video): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            check(video.file.delete()) { "Couldn't delete ${video.name}" }
+            check(video.file.delete()) { str(R.string.video_repository_couldn_t_delete_x, video.name) }
             notifyMediaStore(video.path)
         }
     }
@@ -128,8 +132,8 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             val parent = if (hidden) vault else root
             parent.mkdirs()
             val dir = File(parent, clean)
-            require(!dir.exists()) { "“$clean” already exists" }
-            check(dir.mkdirs()) { "Couldn't create “$clean”" }
+            require(!dir.exists()) { str(R.string.video_repository_x_already_exists, clean) }
+            check(dir.mkdirs()) { str(R.string.video_repository_couldn_t_create_x, clean) }
             if (noMedia && !hidden) File(dir, NOMEDIA).createNewFile()
             dir
         }
@@ -140,8 +144,8 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             val src = File(folder.path)
             val target = File(src.parentFile, cleanName(newName))
             if (target == src) return@runCatching src
-            require(!target.exists()) { "“${target.name}” already exists" }
-            check(src.renameTo(target)) { "Couldn't rename folder" }
+            require(!target.exists()) { str(R.string.video_repository_x_already_exists, target.name) }
+            check(src.renameTo(target)) { str(R.string.ambr_couldn_t_rename_folder) }
             if (!folder.isHidden) rescanFolder(src, target)
             target
         }
@@ -152,7 +156,7 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
         runCatching {
             val dir = File(folder.path)
             val paths = folder.videos.map { it.path }
-            check(dir.deleteRecursively()) { "Couldn't delete everything in “${folder.name}”" }
+            check(dir.deleteRecursively()) { str(R.string.video_repository_couldn_t_delete_everything_in, folder.name) }
             if (!folder.isHidden) notifyMediaStore(*paths.toTypedArray())
         }
     }
@@ -168,7 +172,7 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
                 val parent = if (hidden) vault else root
                 parent.mkdirs()
                 val target = uniqueDir(parent, src.name)
-                check(target.mkdirs()) { "Couldn't create the destination folder" }
+                check(target.mkdirs()) { str(R.string.video_repository_couldn_t_create_the_destination) }
                 val files = src.walkTopDown().filter { it.isFile && it.name != NOMEDIA }.toList()
                 files.forEachIndexed { i, f ->
                     progress(i, files.size)
@@ -197,14 +201,14 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             // Different file system (e.g. shared ↔ private vault): copy, then delete.
             src.copyTo(target)
             target.setLastModified(src.lastModified())
-            check(src.delete()) { "Copied, but couldn't remove the original" }
+            check(src.delete()) { str(R.string.video_repository_copied_but_couldn_t_remove) }
         }
         return target
     }
 
     private fun cleanName(raw: String): String {
         val clean = raw.trim().replace(Regex("""[\\/:*?"<>|]"""), "_").trimStart('.')
-        require(clean.isNotEmpty()) { "Name can't be empty" }
+        require(clean.isNotEmpty()) { str(R.string.video_repository_name_can_t_be_empty) }
         return clean
     }
 

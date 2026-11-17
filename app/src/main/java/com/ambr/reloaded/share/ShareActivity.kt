@@ -1,5 +1,7 @@
 package com.ambr.reloaded.share
 
+import com.ambr.reloaded.util.str
+
 import android.Manifest
 import android.content.ClipboardManager
 import android.content.Intent
@@ -230,7 +232,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(painterResource(R.drawable.ambr_logo), null, Modifier.size(40.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text("Save to AMBR", style = MaterialTheme.typography.headlineSmall)
+                    Text(str(R.string.share_save_to_ambr), style = MaterialTheme.typography.headlineSmall)
                 }
                 Spacer(Modifier.height(14.dp))
 
@@ -247,7 +249,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                         if (incoming.url == null) {
                             OutlinedTextField(
                                 value = url, onValueChange = { url = it.trim() },
-                                label = { Text("Paste a video link") },
+                                label = { Text(str(R.string.share_paste_a_video_link)) },
                                 leadingIcon = { Icon(Icons.Rounded.Link, null) },
                                 singleLine = true, shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.fillMaxWidth(),
@@ -256,9 +258,9 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                         }
                         LinkPreview(preview, url, onSignIn = { site -> signInLauncher.launch(SiteLoginActivity.intent(context, site)) })
                         Spacer(Modifier.height(14.dp))
-                        Text("Quality", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(str(R.string.settings_quality), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(6.dp))
-                        val options = listOf(480 to "480p", 720 to "720p", 1080 to "1080p", 0 to "Best")
+                        val options = listOf(480 to "480p", 720 to "720p", 1080 to "1080p", 0 to str(R.string.settings_best))
                         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                             options.forEachIndexed { i, (h, label) ->
                                 SegmentedButton(
@@ -273,7 +275,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                 }
 
                 Spacer(Modifier.height(14.dp))
-                Text("Save to", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(str(R.string.share_save_to), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(6.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(folders, key = { it.path }) { f ->
@@ -288,7 +290,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                     item {
                         AssistChip(
                             onClick = { newFolder = true },
-                            label = { Text("New") },
+                            label = { Text(str(R.string.share_new)) },
                             leadingIcon = { Icon(Icons.Rounded.Add, null, Modifier.size(18.dp)) },
                             shape = RoundedCornerShape(12.dp),
                         )
@@ -297,10 +299,10 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                         AssistChip(
                             onClick = {
                                 if (prefs.biometric && Biometrics.available(context)) {
-                                    Biometrics.prompt(context, "Show hidden folders", onSuccess = { unlocked = true }, onFallback = { askPin = true })
+                                    Biometrics.prompt(context, str(R.string.home_show_hidden_folders), onSuccess = { unlocked = true }, onFallback = { askPin = true })
                                 } else askPin = true
                             },
-                            label = { Text("Hidden…") },
+                            label = { Text(str(R.string.share_hidden)) },
                             leadingIcon = { Icon(Icons.Rounded.Lock, null, Modifier.size(18.dp)) },
                             shape = RoundedCornerShape(12.dp),
                         )
@@ -313,7 +315,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                     Spacer(Modifier.height(12.dp))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onClose) { Text("Cancel") }
+                    TextButton(onClick = onClose) { Text(str(R.string.pin_pad_cancel)) }
                     Spacer(Modifier.weight(1f))
                     val folder = folders.firstOrNull { it.path == target }
                     val ready = folder != null && copying == null && when (incoming) {
@@ -333,7 +335,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                                     prefs.downloadHeight = height
                                     val title = (preview as? Preview.Ready)?.info?.title
                                     DownloadWorker.enqueue(context, url, File(f.path), f.name, title, height, f.isHidden)
-                                    Toast.makeText(context, "Downloading to ${f.name}…", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, str(R.string.share_downloading_to_x, f.name), Toast.LENGTH_SHORT).show()
                                     onClose()
                                 }
                                 is Incoming.Files -> scope.launch {
@@ -343,7 +345,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                                     }
                                     Toast.makeText(
                                         context,
-                                        if (n == incoming.uris.size) "Saved to ${f.name}" else "Saved $n of ${incoming.uris.size}",
+                                        if (n == incoming.uris.size) str(R.string.downloader_saved_to_x, f.name) else str(R.string.share_saved_x_of_x, n, incoming.uris.size),
                                         Toast.LENGTH_SHORT,
                                     ).show()
                                     onClose()
@@ -356,7 +358,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                         Icon(if (incoming is Incoming.Link) Icons.Rounded.Download else Icons.Rounded.SaveAlt, null)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            if (incoming is Incoming.Link) "Download" else "Save",
+                            if (incoming is Incoming.Link) str(R.string.share_download) else str(R.string.mind_meld_save),
                             style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
                         )
                     }
@@ -377,9 +379,9 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
         var name by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { newFolder = false },
-            title = { Text("New folder") },
+            title = { Text(str(R.string.folder_new_folder)) },
             text = {
-                OutlinedTextField(name, { name = it }, singleLine = true, label = { Text("Folder name") }, shape = RoundedCornerShape(16.dp))
+                OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(str(R.string.folder_folder_name)) }, shape = RoundedCornerShape(16.dp))
             },
             confirmButton = {
                 TextButton(enabled = name.isNotBlank(), onClick = {
@@ -388,9 +390,9 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                         repo.createFolder(name, hidden = false, noMedia = false).onSuccess { target = it.absolutePath }
                         reload()
                     }
-                }) { Text("Create") }
+                }) { Text(str(R.string.folder_create)) }
             },
-            dismissButton = { TextButton(onClick = { newFolder = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { newFolder = false }) { Text(str(R.string.pin_pad_cancel)) } },
         )
     }
 }
@@ -405,7 +407,7 @@ private fun LinkPreview(preview: Preview, url: String, onSignIn: (Site) -> Unit)
                         Icon(Icons.Rounded.Link, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(12.dp))
                         Text(
-                            if (url.isBlank()) "No link found. Paste one above." else url,
+                            if (url.isBlank()) str(R.string.share_no_link_found_paste_one) else url,
                             style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -413,9 +415,9 @@ private fun LinkPreview(preview: Preview, url: String, onSignIn: (Site) -> Unit)
                         LoadingIndicator(Modifier.size(48.dp))
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("Peeking at the link…", style = MaterialTheme.typography.titleSmall)
+                            Text(str(R.string.share_peeking_at_the_link), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "The first time takes a few seconds while the downloader unpacks.",
+                                str(R.string.share_the_first_time_takes_a),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -446,18 +448,18 @@ private fun LinkPreview(preview: Preview, url: String, onSignIn: (Site) -> Unit)
                         Spacer(Modifier.width(12.dp))
                         val site = Site.forUrl(url)
                         if (site != null && SiteCookies.isAuthError(p.reason)) Column {
-                            Text("${site.label} wants you to sign in", style = MaterialTheme.typography.titleSmall)
+                            Text(str(R.string.downloader_x_wants_you_to_sign, site.label), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "Sign in once inside AMBR and it'll use that login for downloads.",
+                                str(R.string.share_sign_in_once_inside_ambr),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(Modifier.height(8.dp))
-                            Button(onClick = { onSignIn(site) }) { Text("Sign in to ${site.label}") }
+                            Button(onClick = { onSignIn(site) }) { Text(str(R.string.share_sign_in_to_x, site.label)) }
                         } else Column {
-                            Text("Couldn't preview this link", style = MaterialTheme.typography.titleSmall)
+                            Text(str(R.string.share_couldn_t_preview_this_link), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "${p.reason}\nYou can still try downloading.",
+                                str(R.string.share_x_nyou_can_still_try, p.reason),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 4, overflow = TextOverflow.Ellipsis,
@@ -483,7 +485,7 @@ private fun FilesPreview(uris: List<Uri>) {
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                if (uris.size == 1) "1 video, ready to copy" else "${uris.size} videos, ready to copy",
+                if (uris.size == 1) str(R.string.share_1_video_ready_to_copy) else str(R.string.share_x_videos_ready_to_copy, uris.size),
                 style = MaterialTheme.typography.titleSmall,
             )
         }
@@ -494,10 +496,10 @@ private fun FilesPreview(uris: List<Uri>) {
 private fun NeedsAccess(onOpen: () -> Unit) {
     Column {
         Text(
-            "AMBR needs file access before it can save videos. Open AMBR once and tap “Grant access”, then share again.",
+            str(R.string.share_ambr_needs_file_access_before),
             style = MaterialTheme.typography.bodyLarge,
         )
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onOpen) { Text("Open AMBR") }
+        Button(onClick = onOpen) { Text(str(R.string.share_open_ambr)) }
     }
 }
