@@ -14,9 +14,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      # GitHub's Ubuntu runners ship the Android SDK; just accept licenses and add platform 37.
       - name: Install SDK platform 37
-        run: sdkmanager "platforms;android-37.0" "build-tools;36.1.0"
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-37.0" "build-tools;36.1.0" > /dev/null
       - uses: gradle/actions/setup-gradle@v4
       - name: Build debug APKs
         run: ./gradlew assembleDebug --console=plain
