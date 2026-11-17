@@ -117,9 +117,25 @@ git push -u origin main
 
 ## 5. Translations with Weblate
 
-1. **Move every user-visible string** into `app/src/main/res/values/strings.xml` and use
-   `stringResource(R.string.…)` in Compose (`pluralStringResource` for counts). Weblate can only
-   translate what's in `strings.xml`.
+1. **Move every user-visible string** into `app/src/main/res/values/strings.xml`. What AMBR did:
+   - Add an app-wide helper (`util/Format.kt`): `fun str(@StringRes id: Int, vararg args: Any?) = App.instance.getString(id, *args)`
+     (set `instance` in `Application.onCreate`). It works in Compose, ViewModels, workers and
+     notifications alike, so no context plumbing. Plurals: `plural(R.plurals.x, n)`.
+   - Run the extractor (kept in `~/tools/extract_strings.py`, dry run first):
+     ```bash
+     python3 ~/tools/extract_strings.py --src app/src/main/java --pkg com.example.app \
+       --res app/src/main/res --helper com.example.app.util.str \
+       --exclude-file 'Server|Client|ui/theme|util/' --dry-run
+     ```
+     It turns `"Moved to ${name}"` into `str(R.string.x_moved_to_x, name)` + `Moved to %1$s` and
+     skips logs, regexes, JSON/pref keys and URLs.
+   - Fix by hand: words chosen in code (`if (n == 1) "copy" else "copies"` → `<plurals>`), and
+     lowercase single words the script skips (grep for `"[a-z]+"` in UI files).
+   - Verify with **pseudo-locales**: `debug { isPseudoLocalesEnabled = true }`, then
+     `adb shell cmd locale set-app-locales <debug app id> --locales en-XA`. Every translatable
+     string turns `[Åççéñţéð]`; anything still plain English is hard-coded.
+   - `androidResources { generateLocaleConfig = true }` + `res/resources.properties`
+     (`unqualifiedResLocale=en-US`) lists each translated language in Android 13+'s per-app language setting.
 2. Apply for free hosting at <https://hosted.weblate.org/hosting/> (Libre plan for open-source).
 3. Create a project + component:
    - Source code repository: `https://github.com/OWNER/REPO.git`, branch `main`
