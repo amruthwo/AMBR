@@ -29,6 +29,7 @@ typealias Progress = (done: Int, total: Int) -> Unit
 class VideoRepository(private val context: Context, private val prefs: Prefs = Prefs(context)) {
 
     val root: File get() = File(Environment.getExternalStorageDirectory(), "AMBR")
+    val fs = Fs(context)
     val vault: File get() = File(context.filesDir, "vault")
 
     fun isInVault(path: String) = path.startsWith(vault.absolutePath + File.separator)
@@ -51,7 +52,38 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             dir.listFiles()?.filter { it.isDirectory && !it.name.startsWith(".") }?.forEach(::walk)
         }
         walk(root)
-        applyGalleryPolicy(out)
+        applyGalleryPolicy(out)   // only AMBR's own folders: never drop .nomedia files into the user's
+
+        // Linked folders: walked like /AMBR, but empty branches are skipped (think Download/).
+        // Names read like AMBR's: "Movies", "Movies/Extras". Inside a show library, the show
+        // itself is the top level ("Ocean Show", "Ocean Show/Season 1"), not "TV/Ocean Show".
+        fun walkLinked(dir: File, linkRoot: File, library: Boolean): Boolean {
+            val here = mutableListOf<VideoFolder>()
+            val videos = videosIn(dir)
+            var any = videos.isNotEmpty()
+            val kids = dir.listFiles()?.filter {
+                it.isDirectory && !it.name.startsWith(".") && it != root &&
+                    !(it.name == "Android" && fs.isVolumeRoot(dir))
+            }.orEmpty()
+            val mark = out.size
+            kids.forEach { if (walkLinked(it, linkRoot, library)) any = true }
+            if (any || dir == linkRoot) {
+                here += VideoFolder(
+                    dir.absolutePath,
+                    when {
+                        dir == linkRoot -> dir.name.ifEmpty { dir.absolutePath }
+                        library -> dir.relativeTo(linkRoot).path
+                        else -> dir.relativeTo(linkRoot.parentFile ?: linkRoot).path
+                    },
+                    videos, FolderKind.Normal, File(dir, NOMEDIA).exists(),
+                    linked = true, linkRoot = dir == linkRoot,
+                )
+                out.addAll(mark, here)
+            }
+            return any
+        }
+        val libraries = prefs.showLibraries
+        prefs.linkedFolders.map(::File).filter { it.isDirectory }.forEach { walkLinked(it, it, it.absolutePath in libraries) }
         out.sortWith(compareBy<VideoFolder>({ !it.isRoot }, { it.name.lowercase() }))
 
         if (includeVault) {
@@ -102,9 +134,10 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             val target = File(src.parentFile, if (video.extension.isEmpty()) clean else "$clean.${video.extension}")
             if (target.absolutePath == src.absolutePath) return@runCatching video
             require(!target.exists()) { str(R.string.video_repository_a_video_called_x_already, clean) }
-            check(src.renameTo(target)) { str(R.string.video_repository_couldn_t_rename_x, video.name) }
-            notifyMediaStore(src.absolutePath, target.absolutePath)
-            Video.from(target)
+            val done = runCatching { fs.rename(src, target.name) }
+                .getOrElse { if (it is NeedsSafAccess) throw it else error(str(R.string.video_repository_couldn_t_rename_x, video.name)) }
+            notifyMediaStore(src.absolutePath, done.absolutePath)
+            Video.from(done)
         }
     }
 
@@ -119,7 +152,8 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
 
     suspend fun delete(video: Video): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            check(video.file.delete()) { str(R.string.video_repository_couldn_t_delete_x, video.name) }
+            runCatching { fs.delete(video.file) }
+                .onFailure { if (it is NeedsSafAccess) throw it else error(str(R.string.video_repository_couldn_t_delete_x, video.name)) }
             notifyMediaStore(video.path)
         }
     }
@@ -131,9 +165,9 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             val clean = cleanName(name)
             val parent = inside ?: if (hidden) vault else root
             parent.mkdirs()
-            val dir = File(parent, clean)
-            require(!dir.exists()) { str(R.string.video_repository_x_already_exists, clean) }
-            check(dir.mkdirs()) { str(R.string.video_repository_couldn_t_create_x, clean) }
+            require(!File(parent, clean).exists()) { str(R.string.video_repository_x_already_exists, clean) }
+            val dir = runCatching { fs.mkdir(parent, clean) }
+                .getOrElse { if (it is NeedsSafAccess) throw it else error(str(R.string.video_repository_couldn_t_create_x, clean)) }
             if (noMedia && !hidden) File(dir, NOMEDIA).createNewFile()
             dir
         }
@@ -145,9 +179,10 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
             val target = File(src.parentFile, cleanName(newName))
             if (target == src) return@runCatching src
             require(!target.exists()) { str(R.string.video_repository_x_already_exists, target.name) }
-            check(src.renameTo(target)) { str(R.string.ambr_couldn_t_rename_folder) }
-            if (!folder.isHidden) rescanFolder(src, target)
-            target
+            val done = runCatching { fs.rename(src, target.name) }
+                .getOrElse { if (it is NeedsSafAccess) throw it else error(str(R.string.ambr_couldn_t_rename_folder)) }
+            if (!folder.isHidden) rescanFolder(src, done)
+            done
         }
     }
 
@@ -156,7 +191,8 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
         runCatching {
             val dir = File(folder.path)
             val paths = folder.videos.map { it.path }
-            check(dir.deleteRecursively()) { str(R.string.video_repository_couldn_t_delete_everything_in, folder.name) }
+            runCatching { fs.delete(dir) }
+                .onFailure { if (it is NeedsSafAccess) throw it else error(str(R.string.video_repository_couldn_t_delete_everything_in, folder.name)) }
             if (!folder.isHidden) notifyMediaStore(*paths.toTypedArray())
         }
     }
@@ -195,15 +231,25 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
 
     // ----------------------------------------------------------------- utils
 
-    private fun moveFile(src: File, destDir: File): File {
-        val target = uniqueFile(destDir, src.name)
-        if (!src.renameTo(target)) {
-            // Different file system (e.g. shared ↔ private vault): copy, then delete.
-            src.copyTo(target)
-            target.setLastModified(src.lastModified())
-            check(src.delete()) { str(R.string.video_repository_copied_but_couldn_t_remove) }
+    private fun moveFile(src: File, destDir: File): File =
+        fs.move(src, destDir, uniqueFile(destDir, src.name).name)
+
+    /**
+     * Why [dir] can't be added as a linked folder, or null if it can. Prevents overlaps that
+     * would list videos twice (AMBR's own folder, other links) and app-private areas.
+     */
+    fun linkProblem(dir: File): String? {
+        val p = dir.absolutePath
+        fun under(a: String, b: String) = a == b || a.startsWith(b + File.separator)
+        return when {
+            !dir.isDirectory || !dir.canRead() -> str(R.string.video_repository_ambr_can_t_read_that)
+            under(p, root.absolutePath) -> str(R.string.video_repository_that_s_already_inside_ambr)
+            under(root.absolutePath, p) -> str(R.string.video_repository_that_folder_contains_ambr_s)
+            Regex("^/storage/[^/]+(/0)?/Android(/|$)").containsMatchIn(p) -> "Android keeps app data there. Pick another folder."
+            prefs.linkedFolders.any { under(p, it) } -> str(R.string.video_repository_that_folder_is_already_added)
+            prefs.linkedFolders.any { under(it, p) } -> str(R.string.video_repository_a_folder_inside_it_is)
+            else -> null
         }
-        return target
     }
 
     private fun cleanName(raw: String): String {

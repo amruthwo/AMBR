@@ -29,6 +29,13 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.DriveFileRenameOutline
+import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.MoreVert
@@ -82,7 +89,7 @@ private val EpisodeSort.label: String
 
 /** A Big Brain folder: continue button, seasons as tabs, episodes in order with resume progress. */
 @Composable
-fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
+fun ShowScreen(vm: AmbrViewModel, path: String, snackbar: androidx.compose.material3.SnackbarHostState, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     val all by vm.allFolders.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
@@ -116,11 +123,17 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
     var tab by remember(path) { mutableIntStateOf(0) }
     var newSeason by remember { mutableStateOf(false) }
     var moving by remember { mutableStateOf<Video?>(null) }
+    var renamingVideo by remember { mutableStateOf<Video?>(null) }
+    var deletingVideo by remember { mutableStateOf<Video?>(null) }
+    val favorites by vm.favorites.collectAsStateWithLifecycle()
+    val everyFolder by vm.allFolders.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
     // Up next: the first half-watched video, else the first unwatched one.
     val next = playlist.firstOrNull { progress[it.path]?.let { p -> !p.watched && p.positionMs > 5_000 } == true }
         ?: playlist.firstOrNull { progress[it.path]?.watched != true } ?: playlist.firstOrNull()
 
     Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
@@ -216,6 +229,12 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
                         onPlay = { vm.markLastFolder(path); vm.playLong(show.folder.name, playlist, playlist.indexOf(v)) },
                         onWatched = { vm.setWatched(v, it) },
                         onMove = { moving = v },
+                        favorite = v.path in favorites,
+                        onFavorite = { vm.toggleFavorite(v) },
+                        onShare = { com.ambr.reloaded.data.ShareOut.share(context, listOf(v)) },
+                        onRename = { renamingVideo = v },
+                        onCram = { vm.cramQuick(listOf(v)) },
+                        onDelete = { deletingVideo = v },
                     )
                 }
             }
@@ -246,10 +265,21 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
     moving?.let { v ->
         MoveSheet(
             video = v,
-            folders = (listOf(show.folder) + show.seasons).filter { it.path != v.folderPath },
+            // This show's folders first, then every other folder (Brain Rot feeds, other shows, their seasons).
+            folders = run {
+                val mine = (listOf(show.folder) + show.seasons).map { it.path }.toSet()
+                val others = everyFolder.filter { !it.isVirtual && it.path !in mine }
+                (listOf(show.folder) + show.seasons + others).filter { it.path != v.folderPath }
+            },
             onDismiss = { moving = null },
             onMove = { f -> moving = null; vm.move(v, f) },
         )
+    }
+    renamingVideo?.let { v ->
+        RenameDialog(v, onDismiss = { renamingVideo = null }, onConfirm = { renamingVideo = null; vm.rename(v, it) })
+    }
+    deletingVideo?.let { v ->
+        DeleteDialog(v, onDismiss = { deletingVideo = null }, onConfirm = { deletingVideo = null; vm.delete(v) })
     }
 }
 
@@ -263,13 +293,23 @@ private fun EpisodeRow(
     onPlay: () -> Unit,
     onWatched: (Boolean) -> Unit,
     onMove: () -> Unit,
+    favorite: Boolean,
+    onFavorite: () -> Unit,
+    onShare: () -> Unit,
+    onRename: () -> Unit,
+    onCram: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onPlay)
+            .combinedClickable(
+                onClick = onPlay,
+                onLongClick = { haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); menu = true },
+            )
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -308,9 +348,34 @@ private fun EpisodeRow(
                     onClick = { menu = false; onWatched(!watched) },
                 )
                 DropdownMenuItem(
+                    text = { Text(if (favorite) str(R.string.show_remove_from_favorites) else str(R.string.show_add_to_favorites)) },
+                    leadingIcon = { Icon(if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, null) },
+                    onClick = { menu = false; onFavorite() },
+                )
+                DropdownMenuItem(
+                    text = { Text(str(R.string.video_share)) },
+                    leadingIcon = { Icon(Icons.Rounded.Share, null) },
+                    onClick = { menu = false; onShare() },
+                )
+                DropdownMenuItem(
+                    text = { Text(str(R.string.rename)) },
+                    leadingIcon = { Icon(Icons.Rounded.DriveFileRenameOutline, null) },
+                    onClick = { menu = false; onRename() },
+                )
+                DropdownMenuItem(
                     text = { Text(str(R.string.video_move_to)) },
                     leadingIcon = { Icon(Icons.AutoMirrored.Rounded.DriveFileMove, null) },
                     onClick = { menu = false; onMove() },
+                )
+                DropdownMenuItem(
+                    text = { Text(str(R.string.folder_cram)) },
+                    leadingIcon = { Icon(Icons.Rounded.Compress, null) },
+                    onClick = { menu = false; onCram() },
+                )
+                DropdownMenuItem(
+                    text = { Text(str(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Rounded.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) },
+                    onClick = { menu = false; onDelete() },
                 )
             }
         }

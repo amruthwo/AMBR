@@ -1,5 +1,6 @@
-• Big Brain: controls moved to the bottom (one row with the progress bar in landscape)
-• Big Brain: sort episodes by name, date added, length or size; add seasons and move episodes between them
-• Move menus now list seasons
-• Toolbar: plain search icon
-• AMBR Lite is now its own app (installs alongside AMBR): no link downloader, ~5 MB
+• Add folders from your phone (TV, Movies, Download, even SD cards) without copying. TV folders: each show becomes its own Big Brain show
+• Big Brain episodes: long-press or ⋮ for favorite, share, rename, move anywhere, Cram, delete
+• Sort episodes by name, date added, length or size; add seasons
+• Big Brain controls moved to the bottom
+• Plain search icon in the toolbar
+• AMBR Lite is now its own app and installs alongside AMBR

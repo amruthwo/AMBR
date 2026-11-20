@@ -21,7 +21,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 9
-        versionName = "3.1.1"
+        versionName = "3.2.0"
     }
 
     val storePath = secret("storeFile", "AMBR_KEYSTORE_FILE")

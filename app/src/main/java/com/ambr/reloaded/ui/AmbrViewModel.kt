@@ -24,6 +24,8 @@ import com.ambr.reloaded.data.Prefs
 import com.ambr.reloaded.data.Video
 import com.ambr.reloaded.data.VideoFolder
 import com.ambr.reloaded.data.VideoRepository
+import com.ambr.reloaded.data.Saf
+import com.ambr.reloaded.data.NeedsSafAccess
 import com.ambr.reloaded.data.ViewMode
 import com.ambr.reloaded.share.YtDlp
 import kotlinx.coroutines.Dispatchers
@@ -93,7 +95,10 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Home-screen folders: Favorites first, then real folders, with Big Brain seasons tucked inside their show. */
     val folders: StateFlow<List<VideoFolder>> = combine(allFolders, _favorites) { all, favs ->
+        val libraries = prefs.showLibraries
         val list = all.filter { f -> _bigBrain.value.none { root -> f.path.startsWith(root + File.separator) } }
+            // A show library (TV/) with nothing loose in it is just a container: its shows have their own tiles.
+            .filterNot { f -> f.linkRoot && f.count == 0 && f.path in libraries }
             .map { f ->
                 // A show's tile counts every episode in its seasons (cover, size, "N videos", Continue).
                 if (f.mode != FolderMode.BigBrain) f
@@ -264,6 +269,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun rescan() {
         _favorites.value = prefs.favorites   // Cram Session may have renamed favourites
         val list = repo.scan(includeVault = _unlocked.value)
+        adoptLibraryShows(list)
         _folders.value = list
         pruneFavorites()
         refreshAmbience(list)
@@ -370,7 +376,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 replaceInFeed(video) { renamed }
                 say(str(R.string.ambr_renamed_to_x, renamed.title))
             }
-            .onFailure { say(it.message ?: str(R.string.ambr_failed_to_rename)) }
+            .onFailure { failed(it, str(R.string.ambr_failed_to_rename)) }
         rescan()
     }
 
@@ -384,7 +390,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 replaceInFeed(video) { if (virtualFeed) moved else null }
                 say(str(R.string.ambr_moved_to_x, dest.name))
             }
-            .onFailure { say(it.message ?: str(R.string.ambr_failed_to_move)) }
+            .onFailure { failed(it, str(R.string.ambr_failed_to_move)) }
         _busy.value = null
         rescan()
     }
@@ -396,7 +402,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 replaceInFeed(video) { null }
                 say(str(R.string.ambr_deleted))
             }
-            .onFailure { say(it.message ?: str(R.string.ambr_failed_to_delete)) }
+            .onFailure { failed(it, str(R.string.ambr_failed_to_delete)) }
         rescan()
     }
 
@@ -406,14 +412,14 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     fun createSubfolder(parentPath: String, name: String) = viewModelScope.launch {
         repo.createFolder(name, hidden = false, noMedia = false, inside = File(parentPath))
             .onSuccess { say(str(R.string.ambr_folder_x_created, it.name)) }
-            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_create_folder)) }
+            .onFailure { failed(it, str(R.string.ambr_couldn_t_create_folder)) }
         rescan()
     }
 
     fun createFolder(name: String, hidden: Boolean, noMedia: Boolean) = viewModelScope.launch {
         repo.createFolder(name, hidden, noMedia)
             .onSuccess { say(if (hidden) str(R.string.ambr_hidden_folder_x_created, it.name) else str(R.string.ambr_folder_x_created, it.name)) }
-            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_create_folder)) }
+            .onFailure { failed(it, str(R.string.ambr_couldn_t_create_folder)) }
         rescan()
     }
 
@@ -423,13 +429,17 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 folder.videos.forEach { v -> movePathInFavorites(v.path, File(dir, v.name).absolutePath) }
                 if (prefs.lastFolder == folder.path) prefs.lastFolder = dir.absolutePath
                 movePathInGalleryPrefs(folder.path, dir.absolutePath)
+                if (folder.linkRoot) {
+                    prefs.linkedFolders = prefs.linkedFolders - folder.path + dir.absolutePath
+                    _linked.value = prefs.linkedFolders
+                }
                 if (folder.path in _bigBrain.value) {
                     _bigBrain.value = _bigBrain.value - folder.path + dir.absolutePath
                     prefs.bigBrainFolders = _bigBrain.value
                 }
                 say(str(R.string.ambr_renamed_to_x, dir.name))
             }
-            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_rename_folder)) }
+            .onFailure { failed(it, str(R.string.ambr_couldn_t_rename_folder)) }
         rescan()
     }
 
@@ -439,7 +449,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 setFavorites(_favorites.value - folder.videos.map { it.path }.toSet())
                 say(str(R.string.ambr_deleted_x, folder.name))
             }
-            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_delete_folder)) }
+            .onFailure { failed(it, str(R.string.ambr_couldn_t_delete_folder)) }
         rescan()
     }
 
@@ -484,6 +494,10 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
 
     fun startCram(paths: List<String>) {
         if (paths.isEmpty()) return
+        // Cram can't ask for SD-card access from the background, so check before queueing.
+        paths.map { File(it).parentFile!! }.distinct().firstOrNull { !repo.fs.writable(it) }?.let {
+            _safRequest.value = accessFolderFor(it); return
+        }
         Cram.enqueue(getApplication(), paths, _cramHeight.value, _cramCharging.value)
         say(str(R.string.ambr_cramming_x_to_x_p, pluralVideos(paths.size), _cramHeight.value))
     }
@@ -506,7 +520,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 if (prefs.lastFolder == folder.path) prefs.lastFolder = dir.absolutePath
                 say(if (hidden) str(R.string.ambr_x_is_now_hidden, folder.name) else str(R.string.ambr_x_is_visible_again, folder.name))
             }
-            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_move_the_folder)) }
+            .onFailure { failed(it, str(R.string.ambr_couldn_t_move_the_folder)) }
         _busy.value = null
         rescan()
     }
@@ -629,5 +643,83 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
 
     fun say(msg: String) {
         _messages.tryEmit(msg)
+    }
+
+    // ------------------------------------------------- SD cards & linked folders
+
+    /** Set when Android needs the user to grant AMBR an SD card through the system folder picker. */
+    private val _safRequest = MutableStateFlow<File?>(null)
+    val safRequest: StateFlow<File?> = _safRequest.asStateFlow()
+
+    private fun failed(t: Throwable, fallback: String) {
+        if (t is NeedsSafAccess) _safRequest.value = accessFolderFor(t.file) else say(t.message ?: fallback)
+    }
+
+    /** The folder to ask Android for: the added folder that holds [f]. */
+    private fun accessFolderFor(f: File): File =
+        prefs.linkedFolders.map(::File).firstOrNull { f.absolutePath == it.absolutePath || f.absolutePath.startsWith(it.absolutePath + File.separator) }
+            ?: if (f.isDirectory) f else f.parentFile ?: f
+
+    fun dismissSaf() { _safRequest.value = null }
+
+    fun safGranted(tree: android.net.Uri?) {
+        val wanted = _safRequest.value
+        _safRequest.value = null
+        if (tree == null) return
+        runCatching { Saf.persist(getApplication(), tree) }
+        val ok = wanted == null || Saf.covers(getApplication(), wanted)
+        say(
+            if (ok) str(R.string.ambr_thanks_ambr_can_now_change)
+            else str(R.string.ambr_that_folder_doesn_t_cover, wanted?.name),
+        )
+    }
+
+    /** Why a folder can't be added, or null if it can. */
+    fun linkProblem(dir: File): String? = repo.linkProblem(dir)
+
+    /** New folders inside a show library become Big Brain shows (once; the user can switch them back). */
+    private fun adoptLibraryShows(list: List<VideoFolder>) {
+        val libs = prefs.showLibraries
+        if (libs.isEmpty()) return
+        val seen = prefs.librarySeen
+        val fresh = list.map { it.path }.filter { p -> File(p).parent in libs && p !in seen }
+        if (fresh.isEmpty()) return
+        _bigBrain.value = _bigBrain.value + fresh
+        prefs.bigBrainFolders = _bigBrain.value
+        prefs.librarySeen = seen + fresh
+    }
+
+    fun linkFolder(dir: File, bigBrain: Boolean, library: Boolean = false) = viewModelScope.launch {
+        val problem = withContext(Dispatchers.IO) { repo.linkProblem(dir) }
+        if (problem != null) { say(problem); return@launch }
+        prefs.linkedFolders = prefs.linkedFolders + dir.absolutePath
+        _linked.value = prefs.linkedFolders
+        if (bigBrain && library) {
+            prefs.showLibraries = prefs.showLibraries + dir.absolutePath
+        } else if (bigBrain) {
+            _bigBrain.value = _bigBrain.value + dir.absolutePath
+            prefs.bigBrainFolders = _bigBrain.value
+        }
+        say(str(R.string.ambr_added_x_its_videos_stay, dir.name))
+        rescan()
+        // Ask for SD-card access up front, so rename/move/Cram just work later.
+        if (withContext(Dispatchers.IO) { !repo.fs.writable(dir) }) _safRequest.value = dir
+    }
+
+    /** Folders added from the phone, for Settings. */
+    private val _linked = MutableStateFlow(prefs.linkedFolders)
+    val linked: StateFlow<Set<String>> = _linked.asStateFlow()
+
+    fun unlinkFolder(folder: VideoFolder) = unlinkPath(folder.path)
+
+    fun unlinkPath(path: String) = viewModelScope.launch {
+        prefs.linkedFolders = prefs.linkedFolders - path
+        _linked.value = prefs.linkedFolders
+        prefs.showLibraries = prefs.showLibraries - path
+        prefs.librarySeen = prefs.librarySeen.filterNot { it.startsWith(path + File.separator) }.toSet()
+        _bigBrain.value = _bigBrain.value.filterNot { it == path || it.startsWith(path + File.separator) }.toSet()
+        prefs.bigBrainFolders = _bigBrain.value
+        say(str(R.string.ambr_removed_x_from_ambr_its, File(path).name))
+        rescan()
     }
 }

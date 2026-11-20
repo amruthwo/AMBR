@@ -15,14 +15,14 @@ RepoType: git
 Repo: https://github.com/amruthwo/AMBR.git
 
 Builds:
-  - versionName: 3.1.1-lite
+  - versionName: 3.2.0-lite
     versionCode: 9
-    commit: v3.1.1
+    commit: v3.2.0
     subdir: app
     gradle:
       - fdroid
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 3.1.1-lite
+CurrentVersion: 3.2.0-lite
 CurrentVersionCode: 9

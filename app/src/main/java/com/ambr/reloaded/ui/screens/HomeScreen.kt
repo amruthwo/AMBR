@@ -51,6 +51,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.MoreVert
@@ -131,6 +132,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onDownloadLink: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenLink: () -> Unit,
     onOpenShow: (String) -> Unit,
     onOpenMeld: () -> Unit,
     onOpenCram: () -> Unit,
@@ -390,6 +392,7 @@ fun HomeScreen(
     if (creating) {
         CreateFolderDialog(
             onDismiss = { creating = false },
+            onLinkExisting = { creating = false; onOpenLink() },
             onCreate = { name, hidden, noMedia ->
                 creating = false
                 if (hidden) withPin { vm.createFolder(name, true, true) } else vm.createFolder(name, false, noMedia)
@@ -407,6 +410,7 @@ fun HomeScreen(
             onBigBrain = { vm.setBigBrain(f, it); options = null },
             onCram = { options = null; vm.cramQuick(f.videos) },
             onDelete = { options = null; deleting = f },
+            onUnlink = { options = null; vm.unlinkFolder(f) },
         )
     }
     hiding?.let { f ->
@@ -520,8 +524,9 @@ private fun FolderBadges(folder: VideoFolder, small: Boolean, modifier: Modifier
     val icons = buildList {
         if (folder.isVirtual) add(Icons.Rounded.Favorite)
         if (folder.mode == FolderMode.BigBrain) add(Icons.Rounded.Psychology)
+        if (folder.linked) add(Icons.Rounded.Link)
         if (folder.isHidden) add(Icons.Rounded.Lock)
-        else if (folder.noMedia) add(Icons.Rounded.VisibilityOff)
+        else if (folder.noMedia && !folder.linked) add(Icons.Rounded.VisibilityOff)
     }
     if (icons.isEmpty()) return
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

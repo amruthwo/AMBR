@@ -31,6 +31,10 @@ data class VideoFolder(
     val noMedia: Boolean = false,
     /** Brain Rot (shuffled short feed) or Big Brain (in order, long-form, seasons as sub-folders). */
     val mode: FolderMode = FolderMode.BrainRot,
+    /** Lives outside /AMBR (a folder the user added from their phone, or one of its sub-folders). */
+    val linked: Boolean = false,
+    /** The folder the user added itself (not one of its sub-folders). */
+    val linkRoot: Boolean = false,
 ) {
     val count: Int get() = videos.size
     val totalBytes: Long = videos.sumOf { it.sizeBytes }

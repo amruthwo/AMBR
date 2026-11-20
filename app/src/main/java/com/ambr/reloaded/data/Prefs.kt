@@ -71,6 +71,21 @@ class Prefs(private val context: Context) {
         set(v) = sp.edit { putString("meld_name", v) }
 
     /** Folders set to Big Brain (in order, full controls). Everything else is Brain Rot. */
+    /** Folders outside /AMBR that the user added ("linked"); their files stay where they are. */
+    var linkedFolders: Set<String>
+        get() = sp.getStringSet("linked_folders", emptySet())!!.toSet()
+        set(v) = sp.edit { putStringSet("linked_folders", v) }
+
+    /** Linked "libraries" (TV, Movies…): every folder directly inside is its own Big Brain show. */
+    var showLibraries: Set<String>
+        get() = sp.getStringSet("show_libraries", emptySet())!!.toSet()
+        set(v) = sp.edit { putStringSet("show_libraries", v) }
+
+    /** Library sub-folders already turned into shows, so switching one back to Brain Rot sticks. */
+    var librarySeen: Set<String>
+        get() = sp.getStringSet("library_seen", emptySet())!!.toSet()
+        set(v) = sp.edit { putStringSet("library_seen", v) }
+
     var bigBrainFolders: Set<String>
         get() = sp.getStringSet("big_brain_folders", emptySet())!!.toSet()
         set(v) = sp.edit { putStringSet("big_brain_folders", v) }

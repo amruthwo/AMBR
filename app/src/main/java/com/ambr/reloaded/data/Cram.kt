@@ -237,6 +237,7 @@ object Cram {
 class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     private val notifId = 4242
     private val prefs = Prefs(context)
+    private val fs = Fs(context)
 
     override suspend fun doWork(): Result {
         Cram.ensureChannel(applicationContext)
@@ -255,7 +256,9 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
             val probe = Cram.probe(src)
             if (probe == null) { Cram.pop(applicationContext, path, ok = false, saved = 0); continue }
-            val tmp = File(src.parentFile, ".cram-$name.mp4")
+            // Encode next to the original when we can; on a locked-down SD card, in AMBR's storage.
+            val tmpDir = if (fs.direct(src.parentFile!!)) src.parentFile!! else (applicationContext.getExternalFilesDir("cram") ?: applicationContext.cacheDir)
+            val tmp = File(tmpDir, ".cram-$name.mp4")
             tmp.delete()
             val result = runCatching {
                 var last = 0L
@@ -289,11 +292,39 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (tmp.length() >= src.length() * 0.9) { tmp.delete(); return 0L }  // not worth it: keep the original
         val saved = src.length() - tmp.length()
         val mtime = src.lastModified()
+        if (tmp.parentFile != src.parentFile) return finalizeViaSaf(src, tmp, saved)
         var target = File(src.parentFile, "${src.nameWithoutExtension}.mp4")
         check(src.delete()) { str(R.string.cram_couldn_t_remove_the_original) }
         if (target.exists()) target = File(src.parentFile, str(R.string.cram_x_small_mp4, src.nameWithoutExtension))
         check(tmp.renameTo(target)) { str(R.string.cram_couldn_t_rename_the_new) }
         target.setLastModified(mtime)
+        if (src.absolutePath != target.absolutePath && src.absolutePath in prefs.favorites) {
+            prefs.favorites = prefs.favorites - src.absolutePath + target.absolutePath
+        }
+        android.media.MediaScannerConnection.scanFile(
+            applicationContext, arrayOf(src.absolutePath, target.absolutePath), null, null,
+        )
+        return saved
+    }
+
+    /**
+     * SD-card version of the swap: copy the new file onto the card under a temporary name first,
+     * so the original is only removed once a complete copy sits next to it.
+     */
+    private fun finalizeViaSaf(src: File, tmp: File, saved: Long): Long {
+        val dir = src.parentFile!!
+        val (out, staged) = fs.create(dir, ".cram-${src.nameWithoutExtension}.mp4")
+        try {
+            out.use { o -> tmp.inputStream().use { it.copyTo(o, 1 shl 20) } }
+        } catch (e: Exception) {
+            runCatching { fs.delete(staged) }; throw e
+        }
+        tmp.delete()
+        check(staged.length() > 0) { str(R.string.cram_new_file_doesn_t_play) }
+        fs.delete(src)
+        var name = "${src.nameWithoutExtension}.mp4"
+        if (File(dir, name).exists()) name = str(R.string.cram_x_small_mp4, src.nameWithoutExtension)
+        val target = fs.rename(staged, name)
         if (src.absolutePath != target.absolutePath && src.absolutePath in prefs.favorites) {
             prefs.favorites = prefs.favorites - src.absolutePath + target.absolutePath
         }

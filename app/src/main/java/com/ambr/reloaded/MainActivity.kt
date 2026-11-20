@@ -1,5 +1,7 @@
 package com.ambr.reloaded
 
+import com.ambr.reloaded.util.str
+
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -45,6 +47,8 @@ import com.ambr.reloaded.ui.screens.BusyDialog
 import com.ambr.reloaded.ui.screens.CramScreen
 import com.ambr.reloaded.ui.screens.LongPlayerScreen
 import com.ambr.reloaded.ui.screens.SearchScreen
+import androidx.compose.material.icons.rounded.SdCard
+import com.ambr.reloaded.ui.screens.LinkFolderScreen
 import com.ambr.reloaded.ui.screens.ShowScreen
 import com.ambr.reloaded.ui.screens.MindMeldScreen
 import com.ambr.reloaded.ui.screens.DuplicatesScreen
@@ -56,7 +60,7 @@ import com.ambr.reloaded.ui.screens.SettingsScreen
 import com.ambr.reloaded.ui.screens.SplashScreen
 import com.ambr.reloaded.ui.theme.AmbrTheme
 
-private enum class Route { Home, Info, Duplicates, Settings, Cram, Meld, Search }
+private enum class Route { Home, Info, Duplicates, Settings, Cram, Meld, Search, Link }
 
 private sealed interface Screen {
     data object Splash : Screen
@@ -179,6 +183,7 @@ private fun AmbrRoot(activity: ComponentActivity) {
                     onOpenMeld = { route = Route.Meld },
                     onOpenCram = { route = Route.Cram },
                     onOpenSearch = { route = Route.Search },
+                    onOpenLink = { route = Route.Link },
                     onOpenShow = { showPath = it },
                     onDownloadLink = {
                         context.startActivity(
@@ -192,10 +197,11 @@ private fun AmbrRoot(activity: ComponentActivity) {
                 Route.Cram -> CramScreen(vm, snackbar, onBack = { route = Route.Home })
                 Route.Meld -> MindMeldScreen(vm, meld, snackbar, onBack = { route = Route.Home })
                 Route.Search -> SearchScreen(vm, onBack = { route = Route.Home })
+                Route.Link -> LinkFolderScreen(vm, onBack = { route = Route.Home })
             }
             // Read the live feed (renames/deletes update it); fall back to the snapshot while animating out.
             is Screen.Long -> LongPlayerScreen(vm, long ?: s.state, scaleBigBrain, holdSpeed, seekStep)
-            is Screen.Show -> ShowScreen(vm, s.path, onBack = { showPath = null })
+            is Screen.Show -> ShowScreen(vm, s.path, snackbar, onBack = { showPath = null })
             is Screen.Feed -> FeedScreen(
                 feed = feed ?: s.state,
                 folders = allFolders,
@@ -222,4 +228,30 @@ private fun AmbrRoot(activity: ComponentActivity) {
     }
 
     busy?.let { BusyDialog(it) }
+
+    // SD cards: Android wants the user to OK write access once, through its own folder picker.
+    val safRequest by vm.safRequest.collectAsStateWithLifecycle()
+    val safPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree(),
+    ) { vm.safGranted(it) }
+    safRequest?.let { folder ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = vm::dismissSaf,
+            icon = { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.SdCard, null) },
+            title = { androidx.compose.material3.Text(str(R.string.main_allow_changes_on_the_sd, folder.name)) },
+            text = {
+                androidx.compose.material3.Text(
+                    str(R.string.main_to_rename_move_delete_or) +
+                        str(R.string.main_next_screen_make_sure_the, folder.name),
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    runCatching { safPicker.launch(com.ambr.reloaded.data.Saf.initialUri(folder)) }
+                        .onFailure { vm.dismissSaf() }
+                }) { androidx.compose.material3.Text(str(R.string.show_continue)) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = vm::dismissSaf) { androidx.compose.material3.Text(str(R.string.main_not_now)) } },
+        )
+    }
 }

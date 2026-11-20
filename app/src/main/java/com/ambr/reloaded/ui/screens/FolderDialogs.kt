@@ -27,6 +27,8 @@ import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DriveFileRenameOutline
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Warning
@@ -72,7 +74,7 @@ import com.ambr.reloaded.util.formatBytes
 import com.ambr.reloaded.util.pluralVideos
 
 @Composable
-fun CreateFolderDialog(onDismiss: () -> Unit, onCreate: (name: String, hidden: Boolean, noMedia: Boolean) -> Unit) {
+fun CreateFolderDialog(onDismiss: () -> Unit, onCreate: (name: String, hidden: Boolean, noMedia: Boolean) -> Unit, onLinkExisting: () -> Unit = {}) {
     var name by remember { mutableStateOf("") }
     var hidden by remember { mutableStateOf(false) }
     var noMedia by remember { mutableStateOf(false) }
@@ -106,6 +108,18 @@ fun CreateFolderDialog(onDismiss: () -> Unit, onCreate: (name: String, hidden: B
                     if (hidden) str(R.string.folder_hidden_folders_are_always_invisible) else str(R.string.folder_adds_a_nomedia_file),
                     noMedia || hidden, enabled = !hidden,
                 ) { noMedia = it }
+                Spacer(Modifier.height(8.dp))
+                androidx.compose.material3.OutlinedButton(onClick = onLinkExisting, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Rounded.Link, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(str(R.string.folder_add_a_folder_from_your))
+                }
+                Text(
+                    str(R.string.folder_use_videos_where_they_already),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
+                )
             }
         },
         confirmButton = { TextButton(onClick = { onCreate(name, hidden, noMedia || hidden) }, enabled = valid) { Text(str(R.string.folder_create)) } },
@@ -147,6 +161,7 @@ fun FolderOptionsSheet(
     onCram: () -> Unit,
     bigBrain: Boolean,
     onBigBrain: (Boolean) -> Unit,
+    onUnlink: () -> Unit = {},
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -179,7 +194,15 @@ fun FolderOptionsSheet(
                 enabled = !folder.isRoot,
                 onChange = onBigBrain,
             )
-            SwitchRow(
+            if (folder.linked) {
+                ListItem(
+                    leadingContent = { Icon(Icons.Rounded.Link, null) },
+                    headlineContent = { Text(str(R.string.folder_added_from_your_phone)) },
+                    supportingContent = { Text(folder.path.replace(android.os.Environment.getExternalStorageDirectory().absolutePath, "Internal storage"), maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+            if (!folder.linked) SwitchRow(
                 Icons.Rounded.VisibilityOff, str(R.string.folder_hide_from_galleries),
                 when {
                     folder.isHidden -> str(R.string.folder_hidden_folders_are_always_invisible)
@@ -190,7 +213,7 @@ fun FolderOptionsSheet(
                 onChange = onNoMedia,
             )
             if (!folder.isRoot) {
-                SwitchRow(
+                if (!folder.linked) SwitchRow(
                     Icons.Rounded.Lock, str(R.string.folder_hidden_folder),
                     if (folder.isHidden) str(R.string.folder_turn_off_to_move_it)
                     else str(R.string.folder_moves_it_into_ambr_s),
@@ -213,7 +236,12 @@ fun FolderOptionsSheet(
                         Modifier.weight(1f),
                         MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer,
                     )
-                    Tile(
+                    if (folder.linkRoot) Tile(
+                        str(R.string.folder_remove), Icons.Rounded.LinkOff, onUnlink,
+                        RoundedCornerShape(topStart = small, bottomStart = small, topEnd = big, bottomEnd = big),
+                        Modifier.weight(1f),
+                        MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer,
+                    ) else Tile(
                         str(R.string.delete), Icons.Rounded.DeleteOutline, onDelete,
                         RoundedCornerShape(topStart = small, bottomStart = small, topEnd = big, bottomEnd = big),
                         Modifier.weight(1f),

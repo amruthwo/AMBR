@@ -18,7 +18,7 @@
 
 ## What is it?
 
-**AMBR (Airplane Mode Brain Rot)** turns the videos already on your phone into a swipeable, shuffled feed, the way short-video apps work, except everything is yours and it all works offline. Put videos in `Internal storage/AMBR/` (one sub-folder per vibe), open AMBR, and swipe.
+**AMBR (Airplane Mode Brain Rot)** turns the videos already on your phone into a swipeable, shuffled feed, the way short-video apps work, except everything is yours and it all works offline. Put videos in `Internal storage/AMBR/` (one sub-folder per vibe), or add folders you already have (TV shows, Movies, Download, even on an SD card), open AMBR, and swipe.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.png" width="23%">
@@ -40,6 +40,7 @@
 - Material 3 Expressive design: squiggly progress bar, shape-morphing buttons, a background tinted by your thumbnails
 
 **Organize**
+- **Add folders from your phone** without copying them: TV and channel folders become shows with seasons; works on SD cards
 - Folders as a list or 2- / 4-per-row grids; create, rename, move, delete, share
 - **Hidden folders** behind a PIN or fingerprint, kept in app-private storage (screenshots blocked while unlocked)
 - Keeps videos out of other gallery apps (`.nomedia`) by default, with per-folder overrides
@@ -78,7 +79,7 @@ AMBR Lite is a separate app (`com.ambr.reloaded.lite`), so you can install **bot
 
 An F-Droid version (AMBR Lite) is planned. Note: F-Droid signs apps with its own key, so you can't switch between the F-Droid and GitHub versions without reinstalling.
 
-On first launch AMBR asks for **All files access**: it needs it to rename, move, hide and compress the videos in your `AMBR` folder. The internet is only used when you download from a link (or reach a Mind Meld partner on your network).
+On first launch AMBR asks for **All files access**: it needs it to rename, move, hide and compress the videos in your `AMBR` folder and in folders you add. (On some phones, SD-card folders also need a one-time OK in Android's folder picker.) The internet is only used when you download from a link (or reach a Mind Meld partner on your network).
 
 ## Privacy
 

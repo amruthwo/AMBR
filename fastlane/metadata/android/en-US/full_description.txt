@@ -17,6 +17,7 @@
 
 <p><b>Organize</b></p>
 <ul>
+<li>Add folders you already have (TV shows, Movies, Download, SD cards) without copying them</li>
 <li>Folders as a list or as 2- or 4-per-row grids</li>
 <li>Rename, move, delete, share and favorite videos</li>
 <li>Hidden folders behind a PIN or fingerprint, stored in app-private storage</li>

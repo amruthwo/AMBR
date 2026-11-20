@@ -2,13 +2,22 @@
 
 All notable changes to AMBR. Versions follow `versionName` (versionCode in brackets).
 
-## 3.1.1 (9)
+## 3.2.0 (9)
+### Add folders from your phone
+- **+ → Add a folder from your phone** links an existing folder (TV, Movies, Download, a channel…) without copying or moving anything. Pick Big Brain or Brain Rot; sub-folders become seasons (Big Brain) or their own feeds (Brain Rot).
+- **"Each folder inside is its own show"** turns a TV/channels folder into a library: every show is its own Big Brain tile, and new shows are picked up automatically.
+- Works on **SD cards**. Where Android blocks direct writes, AMBR asks once per folder through Android's folder picker, then rename, move, delete and Cram work there too.
+- Added folders show a 🔗 badge; manage them in **Settings → Folders from your phone**. Removing one never deletes its videos. "Hide from galleries" and "Hidden folder" stay limited to AMBR's own folder.
+### Big Brain episodes
+- Long-press an episode (or tap ⋮) for **Favorite, Share, Rename, Move to…, Cram, Delete**, plus Mark watched.
+- **Move to…** lists every folder: this show's seasons, Brain Rot folders, other shows and their seasons.
+### Also
 - Big Brain player: transport controls moved to the bottom, above the progress bar; in landscape they share one row with it.
 - Big Brain folders: sort episodes by Name, Date added, Length or Size (tap again to reverse; remembered per folder).
 - Big Brain folders: **New season** button, and **Move to…** on each episode; the regular Move sheet now lists seasons too.
 - Continue/Play button shows the episode title on its own line.
 - Toolbar: search is a plain magnifying-glass icon, styled like the others.
-- **AMBR Lite is now a separate app** (`com.ambr.reloaded.lite`, "AMBR Lite"), so it installs side by side with AMBR instead of replacing it.
+- AMBR Lite is now a separate app (`com.ambr.reloaded.lite`, "AMBR Lite"), so it installs side by side with AMBR instead of replacing it.
 
 ## 3.1.0 (8)
 ### Big Brain & Brain Rot

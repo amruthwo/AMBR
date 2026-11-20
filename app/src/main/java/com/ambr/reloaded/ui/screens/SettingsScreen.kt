@@ -26,6 +26,8 @@ import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.LinkOff
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.material3.AlertDialog
@@ -143,6 +145,41 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                         trailingContent = { Switch(checked = hide, onCheckedChange = null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.toggleable(hide, role = Role.Switch) { vm.setHideFromGalleries(it) },
+                    )
+                }
+            }
+            item {
+                Section(str(R.string.settings_folders_from_your_phone)) {
+                    val linked by vm.linked.collectAsStateWithLifecycle()
+                    if (linked.isEmpty()) {
+                        Text(
+                            str(R.string.settings_none_yet_tap_on_the),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    linked.sorted().forEach { p ->
+                        ListItem(
+                            leadingContent = { Icon(Icons.Rounded.Link, null) },
+                            headlineContent = { Text(java.io.File(p).name, maxLines = 1) },
+                            supportingContent = {
+                                Text(
+                                    p.replace(android.os.Environment.getExternalStorageDirectory().absolutePath, "Internal storage"),
+                                    maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                )
+                            },
+                            trailingContent = {
+                                androidx.compose.material3.IconButton(onClick = { vm.unlinkPath(p) }) {
+                                    Icon(Icons.Rounded.LinkOff, str(R.string.settings_remove_from_ambr))
+                                }
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        )
+                    }
+                    Text(
+                        str(R.string.settings_removing_a_folder_from_ambr),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
