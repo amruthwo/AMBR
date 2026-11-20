@@ -245,7 +245,19 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                 }
 
                 when (incoming) {
-                    is Incoming.Link -> {
+                    is Incoming.Link -> if (!YtDlp.available) {
+                        Text(
+                            str(R.string.share_this_version_of_ambr_can) +
+                                str(R.string.share_the_full_version_with_link),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/amruthwo/AMBR/releases")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                            onClose()
+                        }) { Text(str(R.string.share_get_the_full_version)) }
+                        return@Column
+                    } else {
                         if (incoming.url == null) {
                             OutlinedTextField(
                                 value = url, onValueChange = { url = it.trim() },
@@ -329,7 +341,7 @@ private fun ShareSheet(incoming: Incoming, onClose: () -> Unit) {
                             prefs.lastDownloadFolder = f.path
                             when (incoming) {
                                 is Incoming.Link -> {
-                                    if (Build.VERSION.SDK_INT >= 33 && !DownloadWorker.canNotify(context)) {
+                                    if (Build.VERSION.SDK_INT >= 33 && !Notify.canNotify(context)) {
                                         notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     }
                                     prefs.downloadHeight = height

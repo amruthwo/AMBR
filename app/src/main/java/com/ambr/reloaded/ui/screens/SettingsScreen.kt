@@ -5,6 +5,7 @@ import com.ambr.reloaded.util.str
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -72,7 +74,10 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ambr.reloaded.BuildConfigInfo
 import com.ambr.reloaded.R
+import com.ambr.reloaded.share.YtDlp
 import com.ambr.reloaded.ui.AmbrViewModel
+import com.ambr.reloaded.ui.components.icon
+import com.ambr.reloaded.ui.components.label
 import com.ambr.reloaded.ui.components.PinDialog
 import com.ambr.reloaded.ui.components.PinMode
 import kotlinx.coroutines.launch
@@ -143,6 +148,10 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
             }
             item {
                 Section(str(R.string.settings_playback)) {
+                    val sr by vm.scaleBrainRot.collectAsStateWithLifecycle()
+                    val sb by vm.scaleBigBrain.collectAsStateWithLifecycle()
+                    ScaleChoice(str(R.string.settings_brain_rot_video_size), sr, vm::setScaleBrainRot)
+                    ScaleChoice(str(R.string.settings_big_brain_video_size), sb, vm::setScaleBigBrain)
                     Choice(str(R.string.settings_hold_to_speed_up), listOf(1.5f to "1.5×", 2f to "2×", 3f to "3×"), holdSpeed, vm::setHoldSpeed)
                     Choice(str(R.string.settings_double_tap_seeks), listOf(5 to "5s", 10 to "10s", 15 to "15s"), seekStep, vm::setSeekStep)
                 }
@@ -185,7 +194,7 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                     }
                 }
             }
-            item {
+            if (YtDlp.available) item {
                 Section(str(R.string.settings_downloads)) {
                     Choice(
                         str(R.string.settings_quality),
@@ -215,7 +224,7 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                     )
                 }
             }
-            item {
+            if (YtDlp.available) item {
                 Section(str(R.string.settings_site_sign_ins)) {
                     Text(
                         str(R.string.settings_some_sites_reddit_instagram_x) +
@@ -252,6 +261,14 @@ fun SettingsScreen(vm: AmbrViewModel, snackbar: SnackbarHostState, onBack: () ->
                             )
                         }
                     }
+                    ListItem(
+                        leadingContent = { Icon(Icons.Rounded.Code, null) },
+                        headlineContent = { Text(str(R.string.settings_source_code_updates)) },
+                        supportingContent = { Text(str(R.string.settings_github_com_amruthwo_ambr_learn)) },
+                        trailingContent = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.clickable { open("https://github.com/amruthwo/AMBR") },
+                    )
                     Spacer(Modifier.height(8.dp))
                     Text(str(R.string.settings_built_with), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     credits.forEach { c ->
@@ -339,6 +356,22 @@ private fun <T> Choice(label: String, options: List<Pair<T, String>>, selected: 
                 onClick = { onSelect(value) },
                 shape = SegmentedButtonDefaults.itemShape(i, options.size),
             ) { Text(text) }
+        }
+    }
+}
+
+@Composable
+private fun ScaleChoice(label: String, selected: com.ambr.reloaded.data.VideoScale, onSelect: (com.ambr.reloaded.data.VideoScale) -> Unit) {
+    Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp, bottom = 6.dp))
+    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
+        items(com.ambr.reloaded.data.VideoScale.entries.size) { i ->
+            val s = com.ambr.reloaded.data.VideoScale.entries[i]
+            androidx.compose.material3.FilterChip(
+                selected = s == selected,
+                onClick = { onSelect(s) },
+                label = { Text(s.label) },
+                leadingIcon = { Icon(s.icon, null, Modifier.size(18.dp)) },
+            )
         }
     }
 }

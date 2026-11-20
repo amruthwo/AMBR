@@ -1,10 +1,17 @@
 <p><b>AMBR (Airplane Mode Brain Rot)</b> is a short-video feed for videos you already have: a swipeable, shuffled player for your own folders that works entirely offline. No accounts, no ads, no tracking.</p>
 
+<p><b>Two ways to watch</b></p>
+<ul>
+<li><b>Brain Rot</b>: a shuffled, swipeable short-video feed for any folder, or <i>Shuffle All</i></li>
+<li><b>Big Brain</b>: play a folder in order with full controls, for shows, channels and long videos. Sub-folders become seasons, and every video resumes where you left off</li>
+</ul>
+
 <p><b>Watch</b></p>
 <ul>
 <li>Swipe through a shuffled feed of any folder, or <i>Shuffle All</i> across everything</li>
 <li>Tap to mute, double-tap the sides to skip (keep tapping to skip further), double-tap the middle to favorite, hold for 2× speed</li>
-<li>Pinch to zoom videos with baked-in black bars</li>
+<li>Pinch to zoom; choose Auto, Fit, Fill, Stretch or Original video size</li>
+<li>Search every video, filter by mode, sort by name, size or folder</li>
 <li>Remembers where you left off in every folder</li>
 </ul>
 
@@ -22,6 +29,6 @@
 
 <p><b>Mind Meld</b>: swap videos and whole folders with a friend's AMBR, phone to phone, over the same Wi-Fi or a private hotspot, by scanning a QR code. No internet needed. Or open your library in any computer's browser to stream, download or upload.</p>
 
-<p><b>Save to AMBR</b>: share a video or a link to AMBR from any app. Links are downloaded with yt-dlp (the engine behind Seal), with optional in-app sign-in for sites that require it.</p>
+<p><b>Save to AMBR</b>: share video files to AMBR from any app. (The GitHub build also downloads shared links with yt-dlp; the F-Droid build leaves that out.)</p>
 
 <p>AMBR needs "All files access" because it organizes the videos in your <i>AMBR</i> folder. Internet is only used when you download from a link.</p>

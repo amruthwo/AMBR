@@ -2,6 +2,18 @@
 
 All notable changes to AMBR. Versions follow `versionName` (versionCode in brackets).
 
+## 3.1.0 (8)
+### Big Brain & Brain Rot
+- Every folder now has a mode. **Brain Rot** (default) is the shuffled, looping short-video feed. **Big Brain** (long-press a folder) plays in order with full controls: previous/next, ±10s, play/pause, speed, rotate, mute, scrubbing; no looping; auto-advances.
+- Big Brain folders open a show screen: sub-folders become seasons (tabs), episodes sort naturally (2 before 10), with lengths, resume progress and watched marks, plus a Continue button.
+- Resumes each video where you left off.
+### Also new
+- Video size options for both modes: Auto, Fit, Fill (crop), Stretch, Original (Settings, the Big Brain top bar, or the Brain Rot ▾ menu).
+- Search across all videos: filter Brain Rot / Big Brain, sort by name, size or folder.
+- Toolbar: the layout button cycles list / 2 / 4 per row; Search sits in the middle.
+- About: link to the GitHub project for news and updates.
+- New **F-Droid / lite build** (4.6 MB) without the link downloader; GitHub releases include it as `AMBR-x.y.z-lite.apk`.
+
 ## 3.0.3 (7)
 - AMBR is translatable: all text moved to `strings.xml`, translations on [Weblate](https://hosted.weblate.org/engage/ambr/)
 - Proper plural forms; Android 13+ per-app language list generated from available translations

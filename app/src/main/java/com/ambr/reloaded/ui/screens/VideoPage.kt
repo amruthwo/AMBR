@@ -112,6 +112,10 @@ import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.window.layout.FoldingFeature
 import com.ambr.reloaded.data.Video
+import com.ambr.reloaded.data.VideoScale
+import com.ambr.reloaded.ui.components.icon
+import com.ambr.reloaded.ui.components.label
+import com.ambr.reloaded.ui.components.videoSize
 import com.ambr.reloaded.ui.components.HeartBurst
 import com.ambr.reloaded.ui.components.HeartBurstSpec
 import com.ambr.reloaded.ui.components.MorphPlayButton
@@ -125,7 +129,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-enum class VideoAction { Favorite, Share, Rename, Move, Cram, Delete }
+enum class VideoAction { Favorite, Share, Rename, Move, Cram, Scale, Delete }
 
 /**
  * One full-screen video in the feed. Owns its own player; only plays while [selected].
@@ -142,6 +146,7 @@ fun VideoPage(
     favorite: Boolean,
     holdSpeed: Float,
     seekStepSeconds: Int,
+    scale: VideoScale,
     tabletop: FoldingFeature?,
     onToggleMute: () -> Unit,
     onLike: () -> Unit,
@@ -164,6 +169,7 @@ fun VideoPage(
     var duration by remember { mutableLongStateOf(0L) }
     var position by remember { mutableLongStateOf(0L) }
     var aspect by remember { mutableFloatStateOf(0f) }
+    var videoWidthPx by remember { mutableIntStateOf(0) }
     var firstFrame by remember { mutableStateOf(false) }
     var scrubFraction by remember { mutableStateOf<Float?>(null) }
     var fast by remember { mutableStateOf(false) }
@@ -185,6 +191,7 @@ fun VideoPage(
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     aspect = videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
+                    videoWidthPx = (videoSize.width * videoSize.pixelWidthHeightRatio).toInt()
                 }
             }
             override fun onIsPlayingChanged(playing: Boolean) { isPlaying = playing }
@@ -247,17 +254,7 @@ fun VideoPage(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            // Always show the full width. A video only slightly taller than the screen fills it
-            // (losing a sliver top and bottom); anything else is fitted with blurred bars.
-            val boxAspect = if (maxHeight.value > 0f) maxWidth.value / maxHeight.value else 1f
-            val sized = when {
-                aspect <= 0f -> Modifier.fillMaxSize()
-                aspect < boxAspect && aspect / boxAspect >= 0.8f -> Modifier
-                    .fillMaxSize()
-                    .wrapContentSize(unbounded = true)
-                    .size(maxWidth, maxWidth / aspect)
-                else -> Modifier.aspectRatio(aspect)
-            }
+            val sized = videoSize(scale, aspect, videoWidthPx)
             AndroidView(
                 factory = { TextureView(it).also(player::setVideoTextureView) },
                 onRelease = { player.clearVideoTextureView(it) },
@@ -330,6 +327,7 @@ fun VideoPage(
     val controls: @Composable (Modifier) -> Unit = { mod ->
         Controls(
             video = video,
+            scale = scale,
             playing = (isPlaying || (shouldPlay && !firstFrame)) && !userPaused,
             duration = duration,
             position = { position },
@@ -392,6 +390,7 @@ fun VideoPage(
 @Composable
 private fun Controls(
     video: Video,
+    scale: VideoScale,
     playing: Boolean,
     duration: Long,
     position: () -> Long,
@@ -432,7 +431,7 @@ private fun Controls(
                 )
             }
             Spacer(Modifier.width(12.dp))
-            VideoSplitButton(muted, favorite, menuOpen, onMenuOpen, onToggleMute, onAction)
+            VideoSplitButton(muted, favorite, scale, menuOpen, onMenuOpen, onToggleMute, onAction)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             MorphPlayButton(playing = playing, onClick = onPlayPause, size = 48.dp)
@@ -461,6 +460,7 @@ private fun Controls(
 private fun VideoSplitButton(
     muted: Boolean,
     favorite: Boolean,
+    scale: VideoScale,
     menuOpen: Boolean,
     onMenuOpen: (Boolean) -> Unit,
     onToggleMute: () -> Unit,
@@ -513,6 +513,7 @@ private fun VideoSplitButton(
             MenuRow(str(R.string.rename), Icons.Rounded.DriveFileRenameOutline) { onAction(VideoAction.Rename) }
             MenuRow(str(R.string.video_move_to), Icons.AutoMirrored.Rounded.DriveFileMove) { onAction(VideoAction.Move) }
             MenuRow(str(R.string.video_cram_shrink), Icons.Rounded.Compress) { onAction(VideoAction.Cram) }
+            MenuRow(str(R.string.long_player_video_size_x, scale.label), scale.icon) { onAction(VideoAction.Scale) }
             MenuRow(str(R.string.delete), Icons.Rounded.DeleteOutline, danger = true) { onAction(VideoAction.Delete) }
         }
     }

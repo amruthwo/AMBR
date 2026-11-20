@@ -29,6 +29,8 @@ data class VideoFolder(
     val kind: FolderKind,
     /** A .nomedia file keeps the folder out of galleries. Hidden folders are always invisible. */
     val noMedia: Boolean = false,
+    /** Brain Rot (shuffled short feed) or Big Brain (in order, long-form, seasons as sub-folders). */
+    val mode: FolderMode = FolderMode.BrainRot,
 ) {
     val count: Int get() = videos.size
     val totalBytes: Long = videos.sumOf { it.sizeBytes }

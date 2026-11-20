@@ -12,6 +12,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ambr.reloaded.data.Ambience
 import com.ambr.reloaded.data.Cram
+import com.ambr.reloaded.data.FolderMode
+import com.ambr.reloaded.data.ProgressStore
+import com.ambr.reloaded.data.Show
+import com.ambr.reloaded.data.VideoScale
 import com.ambr.reloaded.data.DuplicateFinder
 import com.ambr.reloaded.data.DurationCache
 import com.ambr.reloaded.data.FolderKind
@@ -75,9 +79,27 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     private val _favorites = MutableStateFlow(prefs.favorites)
     val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
 
-    /** Real folders plus the virtual Favorites folder at the front (when it has anything). */
-    val folders: StateFlow<List<VideoFolder>> = combine(_folders, _favorites) { list, favs ->
-        val favVideos = list.flatMap { it.videos }.filter { it.path in favs }
+    private val _bigBrain = MutableStateFlow(prefs.bigBrainFolders)
+    val bigBrain: StateFlow<Set<String>> = _bigBrain.asStateFlow()
+
+    /** The Big Brain folder a path belongs to (itself or an ancestor), if any. */
+    fun bigBrainRootOf(path: String): String? =
+        _bigBrain.value.firstOrNull { path == it || path.startsWith(it + File.separator) }
+
+    /** Every scanned folder, marked with its mode (seasons inside Big Brain folders included). */
+    val allFolders: StateFlow<List<VideoFolder>> = combine(_folders, _bigBrain) { list, bb ->
+        list.map { f -> if (f.path in bb) f.copy(mode = FolderMode.BigBrain) else f }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Home-screen folders: Favorites first, then real folders, with Big Brain seasons tucked inside their show. */
+    val folders: StateFlow<List<VideoFolder>> = combine(allFolders, _favorites) { all, favs ->
+        val list = all.filter { f -> _bigBrain.value.none { root -> f.path.startsWith(root + File.separator) } }
+            .map { f ->
+                // A show's tile counts every episode in its seasons (cover, size, "N videos", Continue).
+                if (f.mode != FolderMode.BigBrain) f
+                else f.copy(videos = all.filter { it.path == f.path || it.path.startsWith(f.path + File.separator) }.flatMap { it.videos })
+            }
+        val favVideos = all.flatMap { it.videos }.filter { it.path in favs }
         val favFolder = if (favVideos.isNotEmpty()) {
             listOf(VideoFolder(VideoFolder.FAVORITES_PATH, str(R.string.ambr_favorites), favVideos, FolderKind.Favorites))
         } else emptyList()
@@ -85,10 +107,80 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** Every video in every visible folder, for Shuffle All. */
-    val allFolder: StateFlow<VideoFolder?> = _folders.map { list ->
-        val all = list.flatMap { it.videos }
+    val allFolder: StateFlow<VideoFolder?> = combine(_folders, _bigBrain) { list, bb ->
+        // Brain Rot only: long-form Big Brain videos stay out of the shuffle.
+        val all = list.filter { f -> bb.none { f.path == it || f.path.startsWith(it + File.separator) } }.flatMap { it.videos }
         if (all.isEmpty()) null else VideoFolder(VideoFolder.ALL_PATH, str(R.string.ambr_shuffle_all), all, FolderKind.All)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    // ------------------------------------------------------------- Big Brain
+
+    private val progressStore = ProgressStore(app)
+    private val _progress = MutableStateFlow(progressStore.all())
+    val progress: StateFlow<Map<String, ProgressStore.Entry>> = _progress.asStateFlow()
+
+    /** What the Big Brain player is playing. [key] changes on every open so the player restarts. */
+    data class LongState(val title: String, val playlist: List<Video>, val startIndex: Int, val key: Long = System.nanoTime())
+    private val _long = MutableStateFlow<LongState?>(null)
+    val long: StateFlow<LongState?> = _long.asStateFlow()
+
+    private val _scaleBrainRot = MutableStateFlow(prefs.scaleBrainRot)
+    val scaleBrainRot: StateFlow<VideoScale> = _scaleBrainRot.asStateFlow()
+    private val _scaleBigBrain = MutableStateFlow(prefs.scaleBigBrain)
+    val scaleBigBrain: StateFlow<VideoScale> = _scaleBigBrain.asStateFlow()
+    fun setScaleBrainRot(s: VideoScale) { _scaleBrainRot.value = s; prefs.scaleBrainRot = s }
+    fun setScaleBigBrain(s: VideoScale) { _scaleBigBrain.value = s; prefs.scaleBigBrain = s }
+
+    fun setBigBrain(folder: VideoFolder, on: Boolean) {
+        _bigBrain.value = if (on) _bigBrain.value + folder.path else _bigBrain.value - folder.path
+        prefs.bigBrainFolders = _bigBrain.value
+        say(str(if (on) R.string.bigbrain_on else R.string.bigbrain_off, folder.name))
+    }
+
+    fun show(path: String): Show? = allFolders.value.firstOrNull { it.path == path }?.let { Show.of(it, allFolders.value) }
+
+    fun playLong(title: String, playlist: List<Video>, start: Int) {
+        if (playlist.isEmpty()) return
+        _long.value = LongState(title, playlist, start.coerceIn(0, playlist.lastIndex))
+    }
+
+    fun closeLong() {
+        _long.value = null
+        _progress.value = progressStore.all()
+    }
+
+    fun saveProgress(path: String, positionMs: Long, durationMs: Long) {
+        if (durationMs <= 0) return
+        progressStore.set(path, positionMs, durationMs)
+    }
+
+    fun setWatched(v: Video, watched: Boolean) {
+        val dur = _progress.value[v.path]?.durationMs ?: 1L
+        if (watched) progressStore.markWatched(v.path, dur) else progressStore.clear(v.path)
+        _progress.value = progressStore.all()
+    }
+
+    fun progressOf(path: String) = progressStore.get(path)
+
+    /** Video lengths for a show's episode list (cached after the first look). */
+    suspend fun durationsOf(videos: List<Video>): Map<String, Long> = durationCache.durations(videos) { _, _ -> }
+
+    fun markLastFolder(path: String) { prefs.lastFolder = path }
+
+    /** Opens a video from anywhere (search): Big Brain → player in show order; Brain Rot → its folder's feed at that video. */
+    fun openVideo(v: Video) {
+        val root = bigBrainRootOf(v.folderPath)
+        if (root != null) {
+            val s = show(root) ?: return
+            val list = s.playlist
+            playLong(s.folder.name, list, list.indexOfFirst { it.path == v.path }.coerceAtLeast(0))
+            return
+        }
+        val folder = allFolders.value.firstOrNull { it.path == v.folderPath } ?: return
+        prefs.lastFolder = folder.path
+        val feed = buildFeed(folder, generation = 0)
+        _feed.value = feed.copy(startIndex = feed.playlist.indexOfFirst { it.path == v.path }.coerceAtLeast(0))
+    }
 
     private val _hideFromGalleries = MutableStateFlow(prefs.hideFromGalleries)
     val hideFromGalleries: StateFlow<Boolean> = _hideFromGalleries.asStateFlow()
@@ -271,6 +363,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
         repo.rename(video, newTitle)
             .onSuccess { renamed ->
                 movePathInFavorites(video.path, renamed.path)
+                progressStore.move(video.path, renamed.path)
                 replaceInFeed(video) { renamed }
                 say(str(R.string.ambr_renamed_to_x, renamed.title))
             }
@@ -283,6 +376,7 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
         repo.move(video, File(dest.path))
             .onSuccess { moved ->
                 movePathInFavorites(video.path, moved.path)
+                progressStore.move(video.path, moved.path)
                 val virtualFeed = _feed.value?.folder?.isVirtual == true
                 replaceInFeed(video) { if (virtualFeed) moved else null }
                 say(str(R.string.ambr_moved_to_x, dest.name))
@@ -318,6 +412,10 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
                 folder.videos.forEach { v -> movePathInFavorites(v.path, File(dir, v.name).absolutePath) }
                 if (prefs.lastFolder == folder.path) prefs.lastFolder = dir.absolutePath
                 movePathInGalleryPrefs(folder.path, dir.absolutePath)
+                if (folder.path in _bigBrain.value) {
+                    _bigBrain.value = _bigBrain.value - folder.path + dir.absolutePath
+                    prefs.bigBrainFolders = _bigBrain.value
+                }
                 say(str(R.string.ambr_renamed_to_x, dir.name))
             }
             .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_rename_folder)) }

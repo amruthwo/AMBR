@@ -20,8 +20,8 @@ android {
         applicationId = "com.ambr.reloaded"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "3.0.3"
+        versionCode = 8
+        versionName = "3.1.0"
     }
 
     val storePath = secret("storeFile", "AMBR_KEYSTORE_FILE")
@@ -55,6 +55,14 @@ android {
     }
     buildFeatures { compose = true }
 
+    // full   = GitHub build, with the yt-dlp link downloader (bundles prebuilt Python/FFmpeg)
+    // fdroid = F-Droid build, no link downloader (F-Droid only ships code it builds from source)
+    flavorDimensions += "dist"
+    productFlavors {
+        create("full") { dimension = "dist" }
+        create("fdroid") { dimension = "dist" }
+    }
+
     // No Google-only encrypted dependency metadata in the APK (IzzyOnDroid / F-Droid require this).
     dependenciesInfo {
         includeInApk = false
@@ -70,7 +78,8 @@ android {
     // One APK per CPU type keeps each download small (arm64 = nearly every modern phone).
     splits {
         abi {
-            isEnable = true
+            // Per-CPU APKs only matter for the full build's big native libraries.
+            isEnable = gradle.startParameter.taskNames.none { it.contains("fdroid", ignoreCase = true) }
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = false
@@ -119,8 +128,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     // yt-dlp for Android (the engine Seal uses).
-    implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
-    implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
+    "fullImplementation"("io.github.junkfood02.youtubedl-android:library:0.18.1")
+    "fullImplementation"("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
 }
 
 kotlin {

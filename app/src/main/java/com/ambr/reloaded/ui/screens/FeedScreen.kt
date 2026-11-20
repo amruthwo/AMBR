@@ -57,6 +57,8 @@ import androidx.window.layout.FoldingFeature
 import com.ambr.reloaded.R
 import com.ambr.reloaded.data.ShareOut
 import com.ambr.reloaded.data.Video
+import com.ambr.reloaded.data.VideoScale
+import com.ambr.reloaded.ui.components.next
 import com.ambr.reloaded.data.VideoFolder
 import com.ambr.reloaded.ui.FeedState
 import com.ambr.reloaded.ui.components.ImmersiveMode
@@ -83,6 +85,8 @@ fun FeedScreen(
     onMove: (Video, VideoFolder) -> Unit,
     onDelete: (Video) -> Unit,
     onCram: (Video) -> Unit,
+    scale: VideoScale,
+    onScale: (VideoScale) -> Unit,
 ) {
     ImmersiveMode()
     BackHandler(onBack = onBack)
@@ -122,6 +126,7 @@ fun FeedScreen(
                         favorite = playlist[page].path in favorites,
                         holdSpeed = holdSpeed,
                         seekStepSeconds = seekStep,
+                        scale = scale,
                         tabletop = tabletop,
                         onToggleMute = onToggleMute,
                         onLike = { onLike(playlist[page]) },
@@ -135,6 +140,7 @@ fun FeedScreen(
                                 VideoAction.Move -> moving = v
                                 VideoAction.Delete -> deleting = v
                                 VideoAction.Cram -> onCram(v)
+                                VideoAction.Scale -> onScale(scale.next())
                             }
                         },
                     )

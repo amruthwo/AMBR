@@ -39,6 +39,9 @@ import kotlin.coroutines.coroutineContext
 
 /** yt-dlp (Python) + FFmpeg, unpacked once per process. */
 object YtDlp {
+    /** This build can download links (the F-Droid build can't). */
+    const val available = true
+
     @Volatile private var ready = false
 
     suspend fun ensure(context: Context) = withContext(Dispatchers.IO) {
@@ -201,11 +204,11 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     private fun notify(n: android.app.Notification) {
-        if (canNotify(applicationContext)) NotificationManagerCompat.from(applicationContext).notify(notifId, n)
+        if (Notify.canNotify(applicationContext)) NotificationManagerCompat.from(applicationContext).notify(notifId, n)
     }
 
     private fun finished(ok: Boolean, title: String, text: String, signIn: Site? = null) {
-        if (!canNotify(applicationContext)) return
+        if (!Notify.canNotify(applicationContext)) return
         val target = if (signIn != null) SiteLoginActivity.intent(applicationContext, signIn)
         else Intent(applicationContext, MainActivity::class.java)
         val open = PendingIntent.getActivity(
@@ -263,38 +266,3 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 }
 
-/** Copies videos another app shared directly (content:// URIs) into a folder. */
-object DirectImport {
-    suspend fun copy(context: Context, uris: List<Uri>, dir: File, hidden: Boolean, progress: (Int, Int) -> Unit): Int =
-        withContext(Dispatchers.IO) {
-            dir.mkdirs()
-            var ok = 0
-            val saved = mutableListOf<String>()
-            uris.forEachIndexed { i, uri ->
-                progress(i, uris.size)
-                runCatching {
-                    val name = displayName(context, uri) ?: str(R.string.downloader_shared_video_x_mp4, System.currentTimeMillis())
-                    val safe = name.replace(Regex("""[\\/:*?"<>|]"""), "_")
-                    var target = File(dir, safe)
-                    var n = 2
-                    while (target.exists()) target = File(dir, "${safe.substringBeforeLast('.')} ($n).${safe.substringAfterLast('.', "mp4")}").also { n++ }
-                    context.contentResolver.openInputStream(uri)!!.use { input ->
-                        target.outputStream().use { input.copyTo(it, 1 shl 16) }
-                    }
-                    saved += target.absolutePath
-                    ok++
-                }
-            }
-            progress(uris.size, uris.size)
-            if (!hidden && saved.isNotEmpty()) {
-                android.media.MediaScannerConnection.scanFile(context, saved.toTypedArray(), null, null)
-            }
-            ok
-        }
-
-    private fun displayName(context: Context, uri: Uri): String? = runCatching {
-        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0) else null
-        }
-    }.getOrNull()?.let { if ('.' in it) it else "$it.mp4" }
-}

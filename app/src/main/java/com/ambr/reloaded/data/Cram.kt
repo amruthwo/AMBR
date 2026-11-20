@@ -1,5 +1,7 @@
 package com.ambr.reloaded.data
 
+import com.ambr.reloaded.share.Notify
+
 import com.ambr.reloaded.util.pluralVideos
 
 import com.ambr.reloaded.util.str
@@ -262,7 +264,7 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     if (now - last > 800) {
                         last = now
                         setProgressAsync(workDataOf("name" to name, "index" to index, "total" to total, "fraction" to f))
-                        if (DownloadWorker.canNotify(applicationContext)) {
+                        if (Notify.canNotify(applicationContext)) {
                             NotificationManagerCompat.from(applicationContext).notify(notifId, info(name, f, index, total).notification)
                         }
                     }
@@ -318,7 +320,7 @@ class CramWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     }
 
     private fun done(q: Cram.QueueState) {
-        if (!DownloadWorker.canNotify(applicationContext)) return
+        if (!Notify.canNotify(applicationContext)) return
         val open = PendingIntent.getActivity(
             applicationContext, 0, Intent(applicationContext, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )

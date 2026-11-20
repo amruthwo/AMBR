@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -144,6 +145,8 @@ fun FolderOptionsSheet(
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onCram: () -> Unit,
+    bigBrain: Boolean,
+    onBigBrain: (Boolean) -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -168,6 +171,14 @@ fun FolderOptionsSheet(
                 }
             }
             Spacer(Modifier.height(8.dp))
+            SwitchRow(
+                Icons.Rounded.Psychology, str(R.string.folder_big_brain_mode),
+                if (bigBrain) str(R.string.folder_in_order_with_full_controls)
+                else str(R.string.folder_play_in_order_with_full),
+                bigBrain,
+                enabled = !folder.isRoot,
+                onChange = onBigBrain,
+            )
             SwitchRow(
                 Icons.Rounded.VisibilityOff, str(R.string.folder_hide_from_galleries),
                 when {

@@ -21,10 +21,12 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" "platforms;android-37.0" "build-tools;36.1.0" > /dev/null
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build debug APKs
-        run: ./gradlew assembleDebug --console=plain
+      - name: Build debug APKs (full)
+        run: ./gradlew assembleFullDebug --console=plain
+      - name: Build debug APK (F-Droid / lite)
+        run: ./gradlew assembleFdroidDebug --console=plain
       - uses: actions/upload-artifact@v4
         with:
           name: ambr-debug-apks
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/*/debug/*.apk
           retention-days: 14

@@ -70,6 +70,18 @@ class Prefs(private val context: Context) {
         get() = sp.getString("meld_name", null) ?: friendlyDeviceName()
         set(v) = sp.edit { putString("meld_name", v) }
 
+    /** Folders set to Big Brain (in order, full controls). Everything else is Brain Rot. */
+    var bigBrainFolders: Set<String>
+        get() = sp.getStringSet("big_brain_folders", emptySet())!!.toSet()
+        set(v) = sp.edit { putStringSet("big_brain_folders", v) }
+
+    var scaleBrainRot: VideoScale
+        get() = runCatching { VideoScale.valueOf(sp.getString("scale_brain_rot", null)!!) }.getOrDefault(VideoScale.Auto)
+        set(v) = sp.edit { putString("scale_brain_rot", v.name) }
+    var scaleBigBrain: VideoScale
+        get() = runCatching { VideoScale.valueOf(sp.getString("scale_big_brain", null)!!) }.getOrDefault(VideoScale.Fit)
+        set(v) = sp.edit { putString("scale_big_brain", v.name) }
+
     var biometric: Boolean
         get() = sp.getBoolean("biometric", false)
         set(v) = sp.edit { putBoolean("biometric", v) }

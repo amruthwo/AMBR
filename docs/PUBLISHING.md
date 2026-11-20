@@ -170,11 +170,32 @@ scanners (libraries, permissions, anti-features) and may ask questions. Expect t
 `MANAGE_EXTERNAL_STORAGE` (it organizes files in a folder you choose) and the downloader
 (uses yt-dlp; anti-feature "NonFreeNet" for downloading from non-free services).
 
-## 7. Later: F-Droid main repo (optional)
-Needs a build flavor without prebuilt binaries (e.g. `lite`: no youtubedl-android) plus a metadata
-merge request at <https://gitlab.com/fdroid/fdroiddata>. F-Droid signs with **its own key**, so
-F-Droid installs can't update to/from GitHub/Izzy installs (users must uninstall to switch), unless
-you set up reproducible builds so F-Droid ships your signature.
+## 7. F-Droid main repo
+
+F-Droid builds every app from source on its own servers and won't ship prebuilt binaries, so AMBR
+has two **product flavors**:
+- `full`: GitHub build, with youtubedl-android (prebuilt Python/yt-dlp/FFmpeg). Its code lives in
+  `app/src/full/`, and its dependencies are `"fullImplementation"(…)`.
+- `fdroid`: no link downloader. `app/src/fdroid/` has a stand-in `YtDlp` with `available = false`,
+  and the UI hides link-download features when it's false.
+
+Also required (already done): no Google dependency-info block (`dependenciesInfo { includeInApk = false }`),
+fastlane metadata, only free libraries, no Google Play Services.
+
+How to submit:
+1. Release a version tag (e.g. `v3.1.0`) so F-Droid can build that exact commit.
+2. Fork <https://gitlab.com/fdroid/fdroiddata>, add `metadata/com.ambr.reloaded.yml` (template in
+   `docs/fdroid/`), and open a merge request. F-Droid's CI test-builds it; reviewers comment there.
+   (Simpler alternative: open a "Request For Packaging" issue at <https://gitlab.com/fdroid/rfp/-/issues>
+   and a volunteer writes the metadata.)
+3. Once merged, new `v*` tags are picked up automatically (`UpdateCheckMode: Tags`).
+
+F-Droid signs with **its own key**, so F-Droid installs and GitHub installs can't update each other
+(users must uninstall to switch, and hidden folders are deleted on uninstall). Reproducible builds
+would let F-Droid ship your signature instead; that's an option for later.
+
+**Obtainium** (<https://github.com/ImranR98/Obtainium>) is the easy middle ground: it installs and
+updates straight from GitHub Releases. The README has an "Add to Obtainium" badge.
 
 ## 8. Checklist for every release
 - [ ] versionCode +1, versionName bumped

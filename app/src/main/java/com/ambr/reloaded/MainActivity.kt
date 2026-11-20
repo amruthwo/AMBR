@@ -43,6 +43,9 @@ import com.ambr.reloaded.ui.FeedState
 import com.ambr.reloaded.meld.MeldViewModel
 import com.ambr.reloaded.ui.screens.BusyDialog
 import com.ambr.reloaded.ui.screens.CramScreen
+import com.ambr.reloaded.ui.screens.LongPlayerScreen
+import com.ambr.reloaded.ui.screens.SearchScreen
+import com.ambr.reloaded.ui.screens.ShowScreen
 import com.ambr.reloaded.ui.screens.MindMeldScreen
 import com.ambr.reloaded.ui.screens.DuplicatesScreen
 import com.ambr.reloaded.ui.screens.FeedScreen
@@ -53,13 +56,15 @@ import com.ambr.reloaded.ui.screens.SettingsScreen
 import com.ambr.reloaded.ui.screens.SplashScreen
 import com.ambr.reloaded.ui.theme.AmbrTheme
 
-private enum class Route { Home, Info, Duplicates, Settings, Cram, Meld }
+private enum class Route { Home, Info, Duplicates, Settings, Cram, Meld, Search }
 
 private sealed interface Screen {
     data object Splash : Screen
     data object Permission : Screen
     data class Page(val route: Route) : Screen
     data class Feed(val state: FeedState) : Screen
+    data class Long(val state: AmbrViewModel.LongState) : Screen
+    data class Show(val path: String) : Screen
 }
 
 class MainActivity : FragmentActivity() {
@@ -124,6 +129,10 @@ private fun AmbrRoot(activity: ComponentActivity) {
     val holdSpeed by vm.holdSpeed.collectAsStateWithLifecycle()
     val seekStep by vm.seekStep.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
+    val long by vm.long.collectAsStateWithLifecycle()
+    val scaleBrainRot by vm.scaleBrainRot.collectAsStateWithLifecycle()
+    val scaleBigBrain by vm.scaleBigBrain.collectAsStateWithLifecycle()
+    var showPath by rememberSaveable { mutableStateOf<String?>(null) }
 
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -133,7 +142,9 @@ private fun AmbrRoot(activity: ComponentActivity) {
     val screen: Screen = when {
         !splashDone -> Screen.Splash
         !hasAccess -> Screen.Permission
+        long != null -> Screen.Long(long!!)
         feed != null -> Screen.Feed(feed!!)
+        showPath != null -> Screen.Show(showPath!!)
         else -> Screen.Page(route)
     }
 
@@ -166,6 +177,8 @@ private fun AmbrRoot(activity: ComponentActivity) {
                     onOpenSettings = { route = Route.Settings },
                     onOpenMeld = { route = Route.Meld },
                     onOpenCram = { route = Route.Cram },
+                    onOpenSearch = { route = Route.Search },
+                    onOpenShow = { showPath = it },
                     onDownloadLink = {
                         context.startActivity(
                             Intent(context, ShareActivity::class.java).setAction(ShareActivity.ACTION_PASTE_LINK),
@@ -177,8 +190,11 @@ private fun AmbrRoot(activity: ComponentActivity) {
                 Route.Settings -> SettingsScreen(vm, snackbar, onBack = { route = Route.Home })
                 Route.Cram -> CramScreen(vm, snackbar, onBack = { route = Route.Home })
                 Route.Meld -> MindMeldScreen(vm, meld, snackbar, onBack = { route = Route.Home })
+                Route.Search -> SearchScreen(vm, onBack = { route = Route.Home })
             }
             // Read the live feed (renames/deletes update it); fall back to the snapshot while animating out.
+            is Screen.Long -> LongPlayerScreen(vm, long ?: s.state, scaleBigBrain, holdSpeed, seekStep)
+            is Screen.Show -> ShowScreen(vm, s.path, onBack = { showPath = null })
             is Screen.Feed -> FeedScreen(
                 feed = feed ?: s.state,
                 folders = folders,
@@ -198,6 +214,8 @@ private fun AmbrRoot(activity: ComponentActivity) {
                 onMove = { v, f -> vm.move(v, f) },
                 onDelete = { vm.delete(it) },
                 onCram = { vm.cramQuick(listOf(it)) },
+                scale = scaleBrainRot,
+                onScale = vm::setScaleBrainRot,
             )
         }
     }

@@ -39,6 +39,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Shuffle
@@ -102,6 +104,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ambr.reloaded.R
+import com.ambr.reloaded.data.FolderMode
+import com.ambr.reloaded.share.YtDlp
 import com.ambr.reloaded.data.VideoFolder
 import com.ambr.reloaded.data.ViewMode
 import com.ambr.reloaded.ui.AmbrViewModel
@@ -126,6 +130,8 @@ fun HomeScreen(
     onOpenDuplicates: () -> Unit,
     onOpenSettings: () -> Unit,
     onDownloadLink: () -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenShow: (String) -> Unit,
     onOpenMeld: () -> Unit,
     onOpenCram: () -> Unit,
 ) {
@@ -192,7 +198,7 @@ fun HomeScreen(
                         Box {
                             IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, str(R.string.home_more)) }
                             DropdownMenu(menu, onDismissRequest = { menu = false }, shape = RoundedCornerShape(20.dp)) {
-                                DropdownMenuItem(
+                                if (YtDlp.available) DropdownMenuItem(
                                     text = { Text(str(R.string.home_download_from_link)) },
                                     leadingIcon = { Icon(Icons.Rounded.Download, null) },
                                     onClick = { menu = false; onDownloadLink() },
@@ -251,7 +257,9 @@ fun HomeScreen(
                     ) {
                         if (lastFolder != null) {
                             item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
-                                ContinueCard(lastFolder, onClick = { vm.openFolder(lastFolder) }, modifier = Modifier.animateItem())
+                                ContinueCard(lastFolder, onClick = {
+                                    if (lastFolder.mode == FolderMode.BigBrain) onOpenShow(lastFolder.path) else vm.openFolder(lastFolder)
+                                }, modifier = Modifier.animateItem())
                             }
                         }
                         allFolder?.let { all ->
@@ -270,7 +278,9 @@ fun HomeScreen(
                             }
                         }
                         items(folders, key = { it.path }) { folder ->
-                            val open = { vm.openFolder(folder) }
+                            val open = {
+                                if (folder.mode == FolderMode.BigBrain) { vm.markLastFolder(folder.path); onOpenShow(folder.path) } else vm.openFolder(folder)
+                            }
                             val longPress = { if (!folder.isVirtual) options = folder }
                             val mod = Modifier.animateItem()
                             when (viewMode) {
@@ -310,13 +320,36 @@ fun HomeScreen(
                 .navigationBarsPadding()
                 .padding(bottom = 12.dp),
         ) {
-            ViewToggle(Icons.AutoMirrored.Rounded.ViewList, str(R.string.home_list), viewMode == ViewMode.List) { vm.setViewMode(ViewMode.List) }
-            ViewToggle(Icons.Rounded.GridView, str(R.string.home_2_per_row), viewMode == ViewMode.Grid2) { vm.setViewMode(ViewMode.Grid2) }
-            ViewToggle(Icons.Rounded.Apps, str(R.string.home_4_per_row), viewMode == ViewMode.Grid4) { vm.setViewMode(ViewMode.Grid4) }
-            VerticalDivider(
-                Modifier.height(28.dp).padding(horizontal = 6.dp),
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.25f),
-            )
+            // Layout: one button that cycles list → 2 per row → 4 per row; its icon shows the current one.
+            IconButton(onClick = {
+                vm.setViewMode(ViewMode.entries[(viewMode.ordinal + 1) % ViewMode.entries.size])
+            }) {
+                AnimatedContent(
+                    viewMode,
+                    transitionSpec = { scaleIn(spring(0.45f, 500f)) + fadeIn() togetherWith fadeOut() },
+                    label = "layout",
+                ) { m ->
+                    Icon(
+                        when (m) { ViewMode.List -> Icons.AutoMirrored.Rounded.ViewList; ViewMode.Grid2 -> Icons.Rounded.GridView; ViewMode.Grid4 -> Icons.Rounded.Apps },
+                        when (m) { ViewMode.List -> str(R.string.home_list); ViewMode.Grid2 -> str(R.string.home_2_per_row); ViewMode.Grid4 -> str(R.string.home_4_per_row) },
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+            // Search, in the middle, using the room the three layout buttons used to take.
+            Surface(
+                onClick = onOpenSearch,
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                contentColor = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.padding(horizontal = 6.dp).height(44.dp),
+            ) {
+                Row(Modifier.padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Search, null, Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(str(R.string.home_search), style = MaterialTheme.typography.labelLarge)
+                }
+            }
             FilledIconToggleButton(
                 checked = unlocked,
                 onCheckedChange = {
@@ -380,6 +413,8 @@ fun HomeScreen(
             onNoMedia = { vm.setNoMedia(f, it); options = null },
             onHidden = { hide -> options = null; if (hide) withPin { hiding = f } else vm.setHidden(f, false) },
             onRename = { options = null; renaming = f },
+            bigBrain = f.mode == FolderMode.BigBrain,
+            onBigBrain = { vm.setBigBrain(f, it); options = null },
             onCram = { options = null; vm.cramQuick(f.videos) },
             onDelete = { options = null; deleting = f },
         )
@@ -494,6 +529,7 @@ private fun ContinueCard(folder: VideoFolder, onClick: () -> Unit, modifier: Mod
 private fun FolderBadges(folder: VideoFolder, small: Boolean, modifier: Modifier = Modifier) {
     val icons = buildList {
         if (folder.isVirtual) add(Icons.Rounded.Favorite)
+        if (folder.mode == FolderMode.BigBrain) add(Icons.Rounded.Psychology)
         if (folder.isHidden) add(Icons.Rounded.Lock)
         else if (folder.noMedia) add(Icons.Rounded.VisibilityOff)
     }

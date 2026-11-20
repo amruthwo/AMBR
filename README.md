@@ -22,16 +22,21 @@
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.png" width="23%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_menu.png" width="23%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_meld.png" width="23%">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_cram.png" width="23%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_show.png" width="23%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_player.png" width="23%">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7_meld.png" width="23%">
 </p>
 
 ## Features
 
+**Two ways to watch**
+- 🧠🫠 **Brain Rot** (default): a shuffled, looping, swipeable feed for short videos, per folder or **Shuffle All**
+- 🧠💡 **Big Brain** (long-press a folder): plays in order with full controls (previous/next, ±10s, speed, rotate). Sub-folders become seasons for shows and channels, and every video resumes where you left off
+
 **Watch**
-- Shuffled, swipeable feed for every folder, plus **Shuffle All** across everything; it remembers where you left off
 - Tap to mute · double-tap left/right to skip (keep tapping to skip further) · double-tap the middle to ❤️ favorite · hold for 2× · pinch to zoom
+- Video size: Auto, Fit, Fill (crop), Stretch or Original
+- **Search** every video; filter Brain Rot / Big Brain; sort by name, size or folder
 - Material 3 Expressive design: squiggly progress bar, shape-morphing buttons, a background tinted by your thumbnails
 
 **Organize**
@@ -54,8 +59,13 @@ Download the APK from the [latest release](https://github.com/amruthwo/AMBR/rele
 |---|---|
 | `AMBR-x.y.z-arm64.apk` | Almost every phone from the last ~8 years |
 | `AMBR-x.y.z-armv7.apk` | Older 32-bit phones |
+| `AMBR-x.y.z-lite.apk` | Any phone; small (≈5 MB), **without** the link downloader (same as the F-Droid build) |
 
-Coming soon to [IzzyOnDroid](https://apt.izzysoft.de/fdroid/) (usable from F-Droid and other F-Droid clients).
+**Automatic updates:** add AMBR to [Obtainium](https://github.com/ImranR98/Obtainium) and it installs new GitHub releases for you:
+
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/amruthwo/AMBR"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54"></a>
+
+An F-Droid version (the lite build) has been submitted. Note: F-Droid signs apps with its own key, so you can't switch between the F-Droid and GitHub versions without reinstalling.
 
 On first launch AMBR asks for **All files access**: it needs it to rename, move, hide and compress the videos in your `AMBR` folder. The internet is only used when you download from a link (or reach a Mind Meld partner on your network).
 
@@ -70,7 +80,8 @@ Requirements: JDK 21, Android SDK with platform 37.
 ```bash
 git clone https://github.com/amruthwo/AMBR.git
 cd AMBR
-./gradlew assembleDebug        # → app/build/outputs/apk/debug/
+./gradlew assembleFullDebug     # GitHub build  → app/build/outputs/apk/full/debug/
+./gradlew assembleFdroidDebug   # lite / F-Droid → app/build/outputs/apk/fdroid/debug/
 ```
 
 Release builds are signed from `keystore.properties` (git-ignored) or `AMBR_KEYSTORE_*` environment variables; without either, they're unsigned. See [docs/PUBLISHING.md](docs/PUBLISHING.md).

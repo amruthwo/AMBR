@@ -1,0 +1,6 @@
+• Big Brain mode: play any folder in order with full controls (prev/next, ±10s, speed, rotate). Sub-folders become seasons; resumes where you left off
+• Brain Rot stays the shuffled short-video feed
+• Video size options: Auto, Fit, Fill (crop), Stretch, Original
+• Search all videos, filter Brain Rot / Big Brain, sort by name, size or folder
+• New toolbar: layout button cycles list/grid views, Search in the middle
+• About links to the GitHub project
