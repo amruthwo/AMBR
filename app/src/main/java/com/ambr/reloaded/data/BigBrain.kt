@@ -57,7 +57,7 @@ data class Show(val folder: VideoFolder, val seasons: List<VideoFolder>) {
         /** Builds a show from the scanned folder list (seasons = folders anywhere under [root]). */
         fun of(root: VideoFolder, all: List<VideoFolder>): Show {
             val prefix = root.path + File.separator
-            val seasons = all.filter { it.path.startsWith(prefix) && it.count > 0 }
+            val seasons = all.filter { it.path.startsWith(prefix) }
                 .sortedWith(compareBy(NaturalOrder) { it.path.removePrefix(prefix) })
             return Show(root, seasons)
         }

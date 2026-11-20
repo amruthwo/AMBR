@@ -401,8 +401,8 @@
     <string name="settings_github_com_amruthwo_ambr_learn">github.com/amruthwo/AMBR: learn about the project and get new versions</string>
     <string name="show_episodes">Episodes</string>
     <string name="show_big_brain_x_videos">Big Brain · %1$s</string>
-    <string name="show_continue">Continue: %1$s</string>
-    <string name="show_play">Play: %1$s</string>
+    <string name="show_continue">Continue</string>
+    <string name="show_play">Play</string>
     <string name="show_watched">Watched</string>
     <string name="show_mark_as_unwatched">Mark as unwatched</string>
     <string name="show_mark_as_watched">Mark as watched</string>
@@ -413,4 +413,9 @@
         <item quantity="one">%1$d result</item>
         <item quantity="other">%1$d results</item>
     </plurals>
+    <string name="show_new_season">New season</string>
+    <string name="show_this_season_is_empty_move">This season is empty. Move videos into it with ⋮ → Move to… on any episode, or from a video\'s ▾ menu.</string>
+    <string name="show_name_e_g_season_3">Name, e.g. Season 3</string>
+    <string name="show_date_added">Date added</string>
+    <string name="show_length">Length</string>
 </resources>

@@ -126,10 +126,10 @@ class VideoRepository(private val context: Context, private val prefs: Prefs = P
 
     // --------------------------------------------------------------- folders
 
-    suspend fun createFolder(name: String, hidden: Boolean, noMedia: Boolean): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun createFolder(name: String, hidden: Boolean, noMedia: Boolean, inside: File? = null): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
             val clean = cleanName(name)
-            val parent = if (hidden) vault else root
+            val parent = inside ?: if (hidden) vault else root
             parent.mkdirs()
             val dir = File(parent, clean)
             require(!dir.exists()) { str(R.string.video_repository_x_already_exists, clean) }

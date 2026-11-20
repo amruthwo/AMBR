@@ -167,6 +167,9 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
 
     fun markLastFolder(path: String) { prefs.lastFolder = path }
 
+    fun showSort(path: String): String? = prefs.showSort(path)
+    fun setShowSort(path: String, value: String) = prefs.setShowSort(path, value)
+
     /** Opens a video from anywhere (search): Big Brain → player in show order; Brain Rot → its folder's feed at that video. */
     fun openVideo(v: Video) {
         val root = bigBrainRootOf(v.folderPath)
@@ -398,6 +401,14 @@ class AmbrViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------------------------------------------------------------- folders
+
+    /** A season (sub-folder) inside a Big Brain folder. */
+    fun createSubfolder(parentPath: String, name: String) = viewModelScope.launch {
+        repo.createFolder(name, hidden = false, noMedia = false, inside = File(parentPath))
+            .onSuccess { say(str(R.string.ambr_folder_x_created, it.name)) }
+            .onFailure { say(it.message ?: str(R.string.ambr_couldn_t_create_folder)) }
+        rescan()
+    }
 
     fun createFolder(name: String, hidden: Boolean, noMedia: Boolean) = viewModelScope.launch {
         repo.createFolder(name, hidden, noMedia)

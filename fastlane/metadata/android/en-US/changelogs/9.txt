@@ -1,0 +1,5 @@
+• Big Brain: controls moved to the bottom (one row with the progress bar in landscape)
+• Big Brain: sort episodes by name, date added, length or size; add seasons and move episodes between them
+• Move menus now list seasons
+• Toolbar: plain search icon
+• AMBR Lite is now its own app (installs alongside AMBR): no link downloader, ~5 MB

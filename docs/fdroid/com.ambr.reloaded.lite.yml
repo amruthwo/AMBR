@@ -1,4 +1,4 @@
-# Metadata for F-Droid (https://gitlab.com/fdroid/fdroiddata), file: metadata/com.ambr.reloaded.yml
+# Metadata for F-Droid (https://gitlab.com/fdroid/fdroiddata), file: metadata/com.ambr.reloaded.lite.yml
 # Builds the "fdroid" flavor: no youtubedl-android (no prebuilt Python/FFmpeg binaries).
 Categories:
   - Multimedia
@@ -9,20 +9,20 @@ IssueTracker: https://github.com/amruthwo/AMBR/issues
 Translation: https://hosted.weblate.org/projects/ambr/
 Changelog: https://github.com/amruthwo/AMBR/blob/main/CHANGELOG.md
 
-AutoName: AMBR
+AutoName: AMBR Lite
 
 RepoType: git
 Repo: https://github.com/amruthwo/AMBR.git
 
 Builds:
-  - versionName: 3.1.0
-    versionCode: 8
-    commit: v3.1.0
+  - versionName: 3.1.1-lite
+    versionCode: 9
+    commit: v3.1.1
     subdir: app
     gradle:
       - fdroid
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 3.1.0
-CurrentVersionCode: 8
+CurrentVersion: 3.1.1-lite
+CurrentVersionCode: 9

@@ -336,19 +336,9 @@ fun HomeScreen(
                     )
                 }
             }
-            // Search, in the middle, using the room the three layout buttons used to take.
-            Surface(
-                onClick = onOpenSearch,
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                contentColor = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.padding(horizontal = 6.dp).height(44.dp),
-            ) {
-                Row(Modifier.padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Search, null, Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(str(R.string.home_search), style = MaterialTheme.typography.labelLarge)
-                }
+            // Search, in the middle.
+            IconButton(onClick = onOpenSearch) {
+                Icon(Icons.Rounded.Search, str(R.string.home_search), tint = MaterialTheme.colorScheme.onPrimaryContainer)
             }
             FilledIconToggleButton(
                 checked = unlocked,

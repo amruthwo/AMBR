@@ -26,7 +26,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Psychology
@@ -66,6 +70,16 @@ import com.ambr.reloaded.util.formatDuration
 import com.ambr.reloaded.util.pluralVideos
 import java.io.File
 
+enum class EpisodeSort { Name, DateAdded, Length, Size }
+
+private val EpisodeSort.label: String
+    get() = when (this) {
+        EpisodeSort.Name -> str(R.string.search_name)
+        EpisodeSort.DateAdded -> str(R.string.show_date_added)
+        EpisodeSort.Length -> str(R.string.show_length)
+        EpisodeSort.Size -> str(R.string.search_size)
+    }
+
 /** A Big Brain folder: continue button, seasons as tabs, episodes in order with resume progress. */
 @Composable
 fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
@@ -74,17 +88,34 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
     val progress by vm.progress.collectAsStateWithLifecycle()
     val show = remember(all, path) { vm.show(path) }
     if (show == null) { onBack(); return }
-    val playlist = show.playlist
-    val durations by produceState(emptyMap<String, Long>(), playlist) { value = vm.durationsOf(playlist) }
+    val durations by produceState(emptyMap<String, Long>(), show.playlist) { value = vm.durationsOf(show.playlist) }
+
+    // Episode order (remembered per show). Seasons keep their order; episodes sort within each.
+    val saved = remember(path) { vm.showSort(path)?.split(':') }
+    var sort by remember(path) { mutableStateOf(saved?.getOrNull(0)?.let { runCatching { EpisodeSort.valueOf(it) }.getOrNull() } ?: EpisodeSort.Name) }
+    var descending by remember(path) { mutableStateOf(saved?.getOrNull(1) == "desc") }
+    fun sorted(list: List<Video>): List<Video> {
+        val asc = when (sort) {
+            EpisodeSort.Name -> list.sortedWith(compareBy(NaturalOrder) { it.name })
+            EpisodeSort.DateAdded -> list.sortedBy { it.lastModified }
+            EpisodeSort.Length -> list.sortedBy { durations[it.path] ?: 0L }
+            EpisodeSort.Size -> list.sortedBy { it.sizeBytes }
+        }
+        return if (descending) asc.reversed() else asc
+    }
 
     // Tabs: loose videos in the folder itself (if any), then each season sub-folder.
     val tabs = buildList {
-        if (show.episodes.isNotEmpty()) add(str(R.string.show_episodes) to show.episodes)
+        if (show.episodes.isNotEmpty()) add(str(R.string.show_episodes) to sorted(show.episodes))
         show.seasons.forEach { s ->
-            add(s.path.removePrefix(show.folder.path + File.separator) to s.videos.sortedWith(compareBy(NaturalOrder) { it.name }))
+            add(s.path.removePrefix(show.folder.path + File.separator) to sorted(s.videos))
         }
     }
+    // What plays, and in what order: every tab, top to bottom, in the chosen sort.
+    val playlist = tabs.flatMap { it.second }
     var tab by remember(path) { mutableIntStateOf(0) }
+    var newSeason by remember { mutableStateOf(false) }
+    var moving by remember { mutableStateOf<Video?>(null) }
     // Up next: the first half-watched video, else the first unwatched one.
     val next = playlist.firstOrNull { progress[it.path]?.let { p -> !p.watched && p.positionMs > 5_000 } == true }
         ?: playlist.firstOrNull { progress[it.path]?.watched != true } ?: playlist.firstOrNull()
@@ -104,6 +135,9 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
                     }
                 },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, str(R.string.cram_back)) } },
+                actions = {
+                    IconButton(onClick = { newSeason = true }) { Icon(Icons.Rounded.CreateNewFolder, str(R.string.show_new_season)) }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -116,16 +150,19 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                         .fillMaxWidth()
-                        .height(ButtonDefaults.MediumContainerHeight),
-                    contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight),
+                        .height(68.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 6.dp),
                 ) {
                     Icon(Icons.Rounded.PlayArrow, null)
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        if (p != null && !p.watched && p.positionMs > 5_000) str(R.string.show_continue, next.title) else str(R.string.show_play, next.title),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight),
-                    )
+                    // Two lines, so a title can't be misread as part of the label.
+                    Column {
+                        Text(
+                            if (p != null && !p.watched && p.positionMs > 5_000) str(R.string.show_continue) else str(R.string.show_play),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Text(next.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
             if (tabs.size > 1) {
@@ -133,7 +170,41 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
                     tabs.forEachIndexed { i, (name, _) -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(name, maxLines = 1) }) }
                 }
             }
+            // Sort chips: tap another to switch, tap the active one to reverse.
+            androidx.compose.foundation.lazy.LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(EpisodeSort.entries.size) { i ->
+                    val s = EpisodeSort.entries[i]
+                    androidx.compose.material3.FilterChip(
+                        selected = sort == s,
+                        onClick = {
+                            if (sort == s) descending = !descending
+                            else { sort = s; descending = s == EpisodeSort.DateAdded }   // newest first by default
+                            vm.setShowSort(path, "${sort.name}:${if (descending) "desc" else "asc"}")
+                        },
+                        label = { Text(s.label) },
+                        trailingIcon = if (sort == s) {
+                            {
+                                Icon(
+                                    if (descending) androidx.compose.material.icons.Icons.Rounded.ArrowDownward else androidx.compose.material.icons.Icons.Rounded.ArrowUpward,
+                                    null, Modifier.size(16.dp),
+                                )
+                            }
+                        } else null,
+                    )
+                }
+            }
             val episodes = tabs.getOrNull(tab)?.second.orEmpty()
+            if (episodes.isEmpty()) {
+                Text(
+                    str(R.string.show_this_season_is_empty_move),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(24.dp),
+                )
+            }
             LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 itemsIndexed(episodes, key = { _, v -> v.path }) { i, v ->
                     EpisodeRow(
@@ -144,10 +215,41 @@ fun ShowScreen(vm: AmbrViewModel, path: String, onBack: () -> Unit) {
                         watched = progress[v.path]?.watched == true,
                         onPlay = { vm.markLastFolder(path); vm.playLong(show.folder.name, playlist, playlist.indexOf(v)) },
                         onWatched = { vm.setWatched(v, it) },
+                        onMove = { moving = v },
                     )
                 }
             }
         }
+    }
+
+    if (newSeason) {
+        var name by remember { mutableStateOf("") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { newSeason = false },
+            icon = { Icon(Icons.Rounded.CreateNewFolder, null) },
+            title = { Text(str(R.string.show_new_season)) },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    name, { name = it }, singleLine = true,
+                    label = { Text(str(R.string.show_name_e_g_season_3)) },
+                    shape = RoundedCornerShape(16.dp),
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(enabled = name.isNotBlank(), onClick = {
+                    newSeason = false; vm.createSubfolder(show.folder.path, name)
+                }) { Text(str(R.string.folder_create)) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { newSeason = false }) { Text(str(R.string.pin_pad_cancel)) } },
+        )
+    }
+    moving?.let { v ->
+        MoveSheet(
+            video = v,
+            folders = (listOf(show.folder) + show.seasons).filter { it.path != v.folderPath },
+            onDismiss = { moving = null },
+            onMove = { f -> moving = null; vm.move(v, f) },
+        )
     }
 }
 
@@ -160,6 +262,7 @@ private fun EpisodeRow(
     watched: Boolean,
     onPlay: () -> Unit,
     onWatched: (Boolean) -> Unit,
+    onMove: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
     Row(
@@ -203,6 +306,11 @@ private fun EpisodeRow(
                     text = { Text(if (watched) str(R.string.show_mark_as_unwatched) else str(R.string.show_mark_as_watched)) },
                     leadingIcon = { Icon(if (watched) Icons.Rounded.Psychology else Icons.Rounded.CheckCircle, null) },
                     onClick = { menu = false; onWatched(!watched) },
+                )
+                DropdownMenuItem(
+                    text = { Text(str(R.string.video_move_to)) },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Rounded.DriveFileMove, null) },
+                    onClick = { menu = false; onMove() },
                 )
             }
         }

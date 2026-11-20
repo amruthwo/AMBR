@@ -2,6 +2,14 @@
 
 All notable changes to AMBR. Versions follow `versionName` (versionCode in brackets).
 
+## 3.1.1 (9)
+- Big Brain player: transport controls moved to the bottom, above the progress bar; in landscape they share one row with it.
+- Big Brain folders: sort episodes by Name, Date added, Length or Size (tap again to reverse; remembered per folder).
+- Big Brain folders: **New season** button, and **Move to…** on each episode; the regular Move sheet now lists seasons too.
+- Continue/Play button shows the episode title on its own line.
+- Toolbar: search is a plain magnifying-glass icon, styled like the others.
+- **AMBR Lite is now a separate app** (`com.ambr.reloaded.lite`, "AMBR Lite"), so it installs side by side with AMBR instead of replacing it.
+
 ## 3.1.0 (8)
 ### Big Brain & Brain Rot
 - Every folder now has a mode. **Brain Rot** (default) is the shuffled, looping short-video feed. **Big Brain** (long-press a folder) plays in order with full controls: previous/next, ±10s, play/pause, speed, rotate, mute, scrubbing; no looping; auto-advances.

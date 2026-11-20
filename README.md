@@ -59,13 +59,24 @@ Download the APK from the [latest release](https://github.com/amruthwo/AMBR/rele
 |---|---|
 | `AMBR-x.y.z-arm64.apk` | Almost every phone from the last ~8 years |
 | `AMBR-x.y.z-armv7.apk` | Older 32-bit phones |
-| `AMBR-x.y.z-lite.apk` | Any phone; small (≈5 MB), **without** the link downloader (same as the F-Droid build) |
+| `AMBR-x.y.z-lite.apk` | **AMBR Lite**: any phone, ≈5 MB, everything except link downloads |
+
+### AMBR vs. AMBR Lite
+
+| | AMBR | AMBR Lite |
+|---|---|---|
+| Feeds, Big Brain, folders, hidden folders, Mind Meld, Cram Session, search | ✅ | ✅ |
+| Share video **files** to it from other apps | ✅ | ✅ |
+| Download videos from **links** (YouTube, Reddit, Instagram, X…) | ✅ | ❌ |
+| Size | ≈58 MB (bundles Python, yt-dlp, FFmpeg) | ≈5 MB |
+
+AMBR Lite is a separate app (`com.ambr.reloaded.lite`), so you can install **both side by side**. Each keeps its own settings, favorites and hidden folders, and both read the same `AMBR` video folder. The F-Droid version will be AMBR Lite, because F-Droid doesn't allow the prebuilt binaries the link downloader needs.
 
 **Automatic updates:** add AMBR to [Obtainium](https://github.com/ImranR98/Obtainium) and it installs new GitHub releases for you:
 
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/amruthwo/AMBR"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54"></a>
 
-An F-Droid version (the lite build) has been submitted. Note: F-Droid signs apps with its own key, so you can't switch between the F-Droid and GitHub versions without reinstalling.
+An F-Droid version (AMBR Lite) is planned. Note: F-Droid signs apps with its own key, so you can't switch between the F-Droid and GitHub versions without reinstalling.
 
 On first launch AMBR asks for **All files access**: it needs it to rename, move, hide and compress the videos in your `AMBR` folder. The internet is only used when you download from a link (or reach a Mind Meld partner on your network).
 

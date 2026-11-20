@@ -5,6 +5,7 @@ import com.ambr.reloaded.util.str
 import com.ambr.reloaded.R
 
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.view.TextureView
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -68,6 +69,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextOverflow
@@ -309,34 +311,44 @@ fun LongPlayerScreen(vm: AmbrViewModel, state: AmbrViewModel.LongState, scale: V
                     }
                 }
 
-                // Centre transport controls.
-                Row(
-                    Modifier.align(Alignment.Center),
-                    horizontalArrangement = Arrangement.spacedBy(18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val tonal = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Color.Black.copy(alpha = 0.45f), contentColor = Color.White)
-                    FilledTonalIconButton(onClick = { if (player.currentPosition > 5_000 || !player.hasPreviousMediaItem()) player.seekTo(0) else player.seekToPreviousMediaItem() }, colors = tonal, enabled = true) {
-                        Icon(Icons.Rounded.SkipPrevious, str(R.string.long_player_previous))
-                    }
-                    FilledTonalIconButton(onClick = { seekBy(-stepMs) }, colors = tonal) { Icon(Icons.Rounded.Replay10, str(R.string.long_player_back_x_s, seekStepSeconds)) }
-                    MorphPlayButton(playing = isPlaying, onClick = {
-                        if (ended) { player.seekTo(0); player.play() } else if (player.isPlaying) player.pause() else player.play()
-                    }, size = 72.dp)
-                    FilledTonalIconButton(onClick = { seekBy(stepMs) }, colors = tonal) { Icon(Icons.Rounded.Forward10, str(R.string.long_player_forward_x_s, seekStepSeconds)) }
-                    FilledTonalIconButton(onClick = { if (player.hasNextMediaItem()) player.seekToNextMediaItem() }, colors = tonal, enabled = player.hasNextMediaItem() || index < playlist.lastIndex) {
-                        Icon(Icons.Rounded.SkipNext, str(R.string.long_player_next))
+                // Transport controls: above the seek bar in portrait, sharing its row in landscape.
+                val wide = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+                val tonal = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Color.Black.copy(alpha = 0.45f), contentColor = Color.White)
+                val transport: @Composable (Boolean) -> Unit = { compact ->
+                    val btn = Modifier.size(if (compact) 40.dp else 48.dp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        FilledTonalIconButton(onClick = { if (player.currentPosition > 5_000 || !player.hasPreviousMediaItem()) player.seekTo(0) else player.seekToPreviousMediaItem() }, colors = tonal, modifier = btn) {
+                            Icon(Icons.Rounded.SkipPrevious, str(R.string.long_player_previous))
+                        }
+                        FilledTonalIconButton(onClick = { seekBy(-stepMs) }, colors = tonal, modifier = btn) { Icon(Icons.Rounded.Replay10, str(R.string.long_player_back_x_s, seekStepSeconds)) }
+                        MorphPlayButton(playing = isPlaying, onClick = {
+                            if (ended) { player.seekTo(0); player.play() } else if (player.isPlaying) player.pause() else player.play()
+                        }, size = if (compact) 48.dp else 64.dp)
+                        FilledTonalIconButton(onClick = { seekBy(stepMs) }, colors = tonal, modifier = btn) { Icon(Icons.Rounded.Forward10, str(R.string.long_player_forward_x_s, seekStepSeconds)) }
+                        FilledTonalIconButton(onClick = { if (player.hasNextMediaItem()) player.seekToNextMediaItem() }, colors = tonal, modifier = btn, enabled = player.hasNextMediaItem() || index < playlist.lastIndex) {
+                            Icon(Icons.Rounded.SkipNext, str(R.string.long_player_next))
+                        }
                     }
                 }
+                val seekBar: @Composable (Modifier) -> Unit = { m ->
+                    SquigglySeekBar(
+                        position = { position },
+                        duration = duration,
+                        playing = isPlaying,
+                        onSeek = { player.seekTo(it); position = it },
+                        modifier = m,
+                    )
+                }
+                val elapsed = formatDuration(position)
+                val remaining = "−" + formatDuration((duration - position).coerceAtLeast(0))
 
-                // Bottom: seek bar + times.
                 Column(
                     Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))))
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))))
                         .displayCutoutPadding()
-                        .padding(start = 20.dp, end = 20.dp, bottom = 18.dp, top = 24.dp),
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 32.dp),
                 ) {
                     if (ended && index >= playlist.lastIndex) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -345,17 +357,23 @@ fun LongPlayerScreen(vm: AmbrViewModel, state: AmbrViewModel.LongState, scale: V
                         }
                         Spacer(Modifier.height(8.dp))
                     }
-                    SquigglySeekBar(
-                        position = { position },
-                        duration = duration,
-                        playing = isPlaying,
-                        onSeek = { player.seekTo(it); position = it },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Row {
-                        Text(formatDuration(position), color = Color.White, style = MaterialTheme.typography.labelMedium)
-                        Spacer(Modifier.weight(1f))
-                        Text("−" + formatDuration((duration - position).coerceAtLeast(0)), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+                    if (wide) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            transport(true)
+                            Spacer(Modifier.width(12.dp))
+                            Text(elapsed, color = Color.White, style = MaterialTheme.typography.labelMedium)
+                            seekBar(Modifier.weight(1f).padding(horizontal = 10.dp))
+                            Text(remaining, color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+                        }
+                    } else {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { transport(false) }
+                        Spacer(Modifier.height(10.dp))
+                        seekBar(Modifier.fillMaxWidth())
+                        Row {
+                            Text(elapsed, color = Color.White, style = MaterialTheme.typography.labelMedium)
+                            Spacer(Modifier.weight(1f))
+                            Text(remaining, color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+                        }
                     }
                 }
             }

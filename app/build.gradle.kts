@@ -20,8 +20,8 @@ android {
         applicationId = "com.ambr.reloaded"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "3.1.0"
+        versionCode = 9
+        versionName = "3.1.1"
     }
 
     val storePath = secret("storeFile", "AMBR_KEYSTORE_FILE")
@@ -60,7 +60,12 @@ android {
     flavorDimensions += "dist"
     productFlavors {
         create("full") { dimension = "dist" }
-        create("fdroid") { dimension = "dist" }
+        create("fdroid") {
+            dimension = "dist"
+            // Its own app ("AMBR Lite"), so it installs alongside the full version.
+            applicationIdSuffix = ".lite"
+            versionNameSuffix = "-lite"
+        }
     }
 
     // No Google-only encrypted dependency metadata in the APK (IzzyOnDroid / F-Droid require this).

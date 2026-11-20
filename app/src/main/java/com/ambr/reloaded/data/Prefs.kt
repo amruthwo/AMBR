@@ -82,6 +82,10 @@ class Prefs(private val context: Context) {
         get() = runCatching { VideoScale.valueOf(sp.getString("scale_big_brain", null)!!) }.getOrDefault(VideoScale.Fit)
         set(v) = sp.edit { putString("scale_big_brain", v.name) }
 
+    /** Episode order for a Big Brain folder, stored as "Name:asc" / "DateAdded:desc"… */
+    fun showSort(path: String): String? = sp.getString("show_sort_$path", null)
+    fun setShowSort(path: String, value: String) = sp.edit { putString("show_sort_$path", value) }
+
     var biometric: Boolean
         get() = sp.getBoolean("biometric", false)
         set(v) = sp.edit { putBoolean("biometric", v) }

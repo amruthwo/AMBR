@@ -176,7 +176,7 @@ F-Droid builds every app from source on its own servers and won't ship prebuilt 
 has two **product flavors**:
 - `full`: GitHub build, with youtubedl-android (prebuilt Python/yt-dlp/FFmpeg). Its code lives in
   `app/src/full/`, and its dependencies are `"fullImplementation"(…)`.
-- `fdroid`: no link downloader. `app/src/fdroid/` has a stand-in `YtDlp` with `available = false`,
+- `fdroid`: **AMBR Lite**, its own app id (`com.ambr.reloaded.lite` via `applicationIdSuffix`) so it installs alongside the full app; no link downloader. `app/src/fdroid/` has a stand-in `YtDlp` with `available = false`,
   and the UI hides link-download features when it's false.
 
 Also required (already done): no Google dependency-info block (`dependenciesInfo { includeInApk = false }`),
@@ -184,7 +184,7 @@ fastlane metadata, only free libraries, no Google Play Services.
 
 How to submit:
 1. Release a version tag (e.g. `v3.1.0`) so F-Droid can build that exact commit.
-2. Fork <https://gitlab.com/fdroid/fdroiddata>, add `metadata/com.ambr.reloaded.yml` (template in
+2. Fork <https://gitlab.com/fdroid/fdroiddata>, add `metadata/com.ambr.reloaded.lite.yml` (template in
    `docs/fdroid/`), and open a merge request. F-Droid's CI test-builds it; reviewers comment there.
    (Simpler alternative: open a "Request For Packaging" issue at <https://gitlab.com/fdroid/rfp/-/issues>
    and a volunteer writes the metadata.)

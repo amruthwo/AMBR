@@ -52,6 +52,7 @@ jobs:
           cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk         "out/AMBR-$V-lite.apk"
           CODE=$(grep -oP 'versionCode = \K\d+' app/build.gradle.kts)
           cp "fastlane/metadata/android/en-US/changelogs/$CODE.txt" out/notes.md 2>/dev/null || echo "See CHANGELOG.md" > out/notes.md
+          cat .github/release-footer.md >> out/notes.md
 
       - uses: softprops/action-gh-release@v2
         with:

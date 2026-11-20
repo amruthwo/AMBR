@@ -123,6 +123,7 @@ private fun AmbrRoot(activity: ComponentActivity) {
     }
 
     val folders by vm.folders.collectAsStateWithLifecycle()
+    val allFolders by vm.allFolders.collectAsStateWithLifecycle()
     val feed by vm.feed.collectAsStateWithLifecycle()
     val muted by vm.muted.collectAsStateWithLifecycle()
     val favorites by vm.favorites.collectAsStateWithLifecycle()
@@ -197,7 +198,7 @@ private fun AmbrRoot(activity: ComponentActivity) {
             is Screen.Show -> ShowScreen(vm, s.path, onBack = { showPath = null })
             is Screen.Feed -> FeedScreen(
                 feed = feed ?: s.state,
-                folders = folders,
+                folders = allFolders,
                 muted = muted,
                 favorites = favorites,
                 holdSpeed = holdSpeed,
